@@ -1,0 +1,4397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XML Diagram Editor - Final Version</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        
+        .app-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            height: 48px;
+            background: white;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+        }
+        
+        .tabs {
+            display: flex;
+            height: 100%;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            background: white;
+            border: none;
+            border-bottom: 2px solid transparent;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+        }
+        
+        .tab.active {
+            color: #2196F3;
+            border-bottom-color: #2196F3;
+        }
+        
+        .version-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 16px;
+            border-left: 1px solid #ddd;
+            margin-left: auto;
+        }
+        
+        .version-dropdown {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        
+        .version-btn {
+            width: 24px;
+            height: 24px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+        
+        .version-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            padding-right: 16px;
+        }
+        
+        .action-button {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .action-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .action-button.page { background: #FF3DC5; color: white; border-color: #FF3DC5; }
+        .action-button.object { background: #2196F3; color: white; border-color: #2196F3; }
+        .action-button.info { background: #FEE25A; color: #333; border-color: #FEE25A; }
+        .action-button.function { background: #00B378; color: white; border-color: #00B378; }
+        .action-button.case { background: #A96CFF; color: white; border-color: #A96CFF; }
+        .action-button.paste { background: #FF9800; color: white; border-color: #FF9800; }
+        
+        .paste-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .paste-modal.active {
+            display: flex;
+        }
+        
+        .paste-modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .paste-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .paste-modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+        
+        .paste-close-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: #f5f5f5;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            color: #666;
+        }
+        
+        .paste-close-btn:hover {
+            background: #e0e0e0;
+        }
+        
+        .paste-textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            resize: vertical;
+            margin-bottom: 12px;
+        }
+        
+        .paste-info {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 16px;
+            padding: 8px;
+            background: #f8f8f8;
+            border-radius: 4px;
+        }
+        
+        .paste-preview {
+            margin-bottom: 16px;
+        }
+        
+        .paste-preview-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .paste-preview-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px;
+            background: #fafafa;
+        }
+        
+        .paste-preview-item {
+            padding: 4px 8px;
+            font-size: 12px;
+            color: #333;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .paste-preview-item:last-child {
+            border-bottom: none;
+        }
+        
+        .paste-preview-item .type-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            margin-right: 6px;
+        }
+        
+        .paste-preview-item .type-badge.object { background: #2196F3; }
+        .paste-preview-item .type-badge.page { background: #FF3DC5; }
+        
+        .paste-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        
+        .paste-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .paste-btn.primary {
+            background: #FF9800;
+            color: white;
+            border-color: #FF9800;
+        }
+        
+        .paste-btn.primary:hover {
+            background: #F57C00;
+        }
+        
+        .paste-btn:hover {
+            background: #f5f5f5;
+        }
+        
+        .main-content {
+            position: absolute;
+            top: 48px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+        
+        .instances-panel {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 200px;
+            background: white;
+            border-right: 1px solid #ddd;
+            padding: 16px;
+            overflow-y: auto;
+        }
+        
+        .instances-panel.hidden {
+            display: none;
+        }
+        
+        .xml-editor-container {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 500px;
+            background: white;
+            border-left: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .editor-subtabs {
+            display: flex;
+            height: 40px;
+            background: white;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .editor-subtab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: white;
+            border: none;
+            border-bottom: 2px solid transparent;
+            font-size: 13px;
+            font-weight: 500;
+            color: #666;
+        }
+        
+        .editor-subtab.active {
+            color: #2196F3;
+            border-bottom-color: #2196F3;
+        }
+        
+        .editor-subtab:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            color: #999;
+        }
+        
+        .editor-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .diff-list-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: none;
+            flex-direction: column;
+            background: #f8f8f8;
+        }
+        
+        .diff-list-container.active {
+            display: flex;
+        }
+        
+        .diff-header {
+            padding: 12px;
+            background: white;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .diff-dropdown {
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            font-size: 12px;
+        }
+        
+        .diff-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+        
+        .diff-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            line-height: 1.5;
+        }
+        
+        .diff-item.grouped {
+            margin-bottom: 2px;
+            border-radius: 0;
+        }
+        
+        .diff-item.grouped.first {
+            border-radius: 4px 4px 0 0;
+        }
+        
+        .diff-item.grouped.last {
+            border-radius: 0 0 4px 4px;
+            margin-bottom: 8px;
+        }
+        
+        .diff-item:hover {
+            background: #f0f7ff;
+            border-color: #2196F3;
+        }
+        
+        .diff-icon {
+            font-size: 14px;
+            font-weight: bold;
+            color: #666;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+        }
+        
+        .diff-icon.added {
+            color: #4CAF50;
+        }
+        
+        .diff-icon.removed {
+            color: #F44336;
+        }
+        
+        .diff-icon.modified {
+            color: #FFA726;
+        }
+        
+        .diff-icon.moved {
+            color: #FFA726;
+        }
+        
+        .diff-description {
+            flex: 1;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .diff-description span {
+            vertical-align: middle;
+        }
+        
+        .diff-jira-btn {
+            padding: 4px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            font-size: 11px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        
+        .diff-jira-btn:hover {
+            background: #f5f5f5;
+        }
+        
+        .diff-type-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 4px;
+        }
+        
+        .diff-type-dot.page { background: #FF3DC5; }
+        .diff-type-dot.object { background: #2196F3; }
+        .diff-type-dot.info { background: #FEE25A; }
+        .diff-type-dot.function { background: #00B378; }
+        .diff-type-dot.case { background: #A96CFF; }
+        
+        .thread-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: none;
+            flex-direction: column;
+            background: #f8f8f8;
+        }
+        
+        .thread-container.active {
+            display: flex;
+        }
+        
+        .thread-messages {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+        
+        .thread-input-container {
+            background: white;
+            border-top: 1px solid #ddd;
+            padding: 12px;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .thread-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 13px;
+            outline: none;
+        }
+        
+        .thread-send-button {
+            padding: 8px 16px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        
+        .thread-send-button:hover {
+            background: #1976D2;
+        }
+        
+        .thread-message {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        
+        .thread-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+        
+        .thread-author {
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .thread-role {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background: #f0f0f0;
+            color: #666;
+        }
+        
+        .thread-role.po { background: #e8f5e9; color: #2e7d32; }
+        .thread-role.dev { background: #e3f2fd; color: #1565c0; }
+        .thread-role.ux { background: #fce4ec; color: #c2185b; }
+        
+        .thread-timestamp {
+            margin-left: auto;
+            font-size: 11px;
+            color: #999;
+        }
+        
+        .thread-content {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #333;
+        }
+        
+        .thread-wireframe {
+            width: 100%;
+            height: 200px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+        }
+        
+        .diagram-container {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 200px;
+            right: 500px;
+            display: flex;
+            flex-direction: column;
+            background: #fafafa;
+        }
+        
+        .diagram-container.expanded {
+            left: 0;
+        }
+        
+        .diagram-builder {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+            padding-left: 60px; /* Extra left padding for first column arrows */
+            padding-right: 100px; /* Extra right padding for last column arrows */
+            padding-bottom: 100px; /* Extra bottom padding for arrows routing below */
+            position: relative;
+        }
+        
+        .arrow-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .diagram-canvas {
+            display: inline-flex;
+            gap: 100px;
+            min-height: 100%;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .diagram-column {
+            min-width: 300px;
+            padding: 10px;
+            min-height: 500px;
+            display: inline-block;
+        }
+        
+        .diagram-item {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 8px;
+            cursor: move;
+            width: 300px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: relative;
+            user-select: none;
+        }
+        
+        .diagram-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+        
+        .diagram-item.drag-over {
+            background: #e3f2fd;
+            border-color: #2196F3;
+            border-style: dashed;
+        }
+        
+        .diagram-item.drag-over-top {
+            border-top-width: 4px;
+            border-top-color: #4CAF50;
+        }
+        
+        .diagram-item.drag-over-bottom {
+            border-bottom-width: 4px;
+            border-bottom-color: #4CAF50;
+        }
+        
+        .diagram-item.drag-over-inside {
+            background: #e3f2fd;
+            border-color: #2196F3;
+        }
+        
+        .diagram-item.multi-selected {
+            background: #fff3e0;
+            border-color: #FF9800;
+            box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.3);
+        }
+        
+        .multi-drag-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #FF9800;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .diagram-item.selected {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+        }
+        
+        .diagram-item.diff-added {
+            background: #e8f5e9;
+            border-style: dashed;
+        }
+        
+        .diagram-item.diff-removed {
+            background: #ffebee;
+            border-style: dashed;
+        }
+        
+        .diagram-item.diff-modified {
+            background: #fff8e1;
+            border-style: dashed;
+        }
+        
+        .diagram-item.diff-moved {
+            background: #fff8e1;
+            border-style: dashed;
+        }
+        
+        .diagram-item.diff-highlight {
+            border-width: 3px;
+            border-color: #333;
+            box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .item-diff-badge {
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            margin-right: 4px;
+        }
+        
+        .item-diff-badge.added {
+            background: #4CAF50;
+        }
+        
+        .item-diff-badge.removed {
+            background: #F44336;
+        }
+        
+        .item-diff-badge.modified {
+            background: #FFA726;
+        }
+        
+        .item-diff-badge.moved {
+            background: #FFA726;
+        }
+        
+        .diagram-item.selected {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+        }
+        
+        .diagram-item.linking-source {
+            opacity: 0.5;
+            border-color: #999;
+        }
+        
+        .diagram-item.linking-target {
+            background: #fffacd;
+            cursor: pointer;
+        }
+        
+        .diagram-item.linking-invalid {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .diagram-item.nested-1 { margin-left: 30px; }
+        .diagram-item.nested-2 { margin-left: 60px; }
+        .diagram-item.nested-3 { margin-left: 90px; }
+        .diagram-item.nested-4 { margin-left: 120px; }
+        .diagram-item.nested-5 { margin-left: 150px; }
+        .diagram-item.nested-6 { margin-left: 180px; }
+        .diagram-item.nested-7 { margin-left: 210px; }
+        .diagram-item.nested-8 { margin-left: 240px; }
+        .diagram-item.nested-9 { margin-left: 270px; }
+        .diagram-item.nested-10 { margin-left: 300px; }
+        .diagram-item.nested-11 { margin-left: 330px; }
+        .diagram-item.nested-12 { margin-left: 360px; }
+        .diagram-item.nested-13 { margin-left: 390px; }
+        .diagram-item.nested-14 { margin-left: 420px; }
+        .diagram-item.nested-15 { margin-left: 450px; }
+        .diagram-item.nested-16 { margin-left: 480px; }
+        .diagram-item.nested-17 { margin-left: 510px; }
+        .diagram-item.nested-18 { margin-left: 540px; }
+        .diagram-item.nested-19 { margin-left: 570px; }
+        
+        .item-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+        
+        .item-type {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .item-type.page { background: #FF3DC5; }
+        .item-type.object { background: #2196F3; }
+        .item-type.info { background: #FEE25A; color: #333; }
+        .item-type.function { background: #00B378; }
+        .item-type.case { background: #A96CFF; }
+        
+        .item-title {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+        
+        .item-reference {
+            font-size: 11px;
+            color: #999;
+            font-weight: normal;
+            margin-left: 8px;
+            white-space: nowrap;
+        }
+        
+        .instance-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #A96CFF;
+        }
+        
+        .instance-indicator.info { background: #FEE25A; }
+        .instance-indicator.function { background: #00B378; }
+        .instance-indicator.case { background: #A96CFF; }
+        
+        .link-button {
+            margin-left: auto;
+            width: 20px;
+            height: 20px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .link-button:hover {
+            background: #f0f0f0;
+        }
+        
+        .title-editor {
+            background: white;
+            border-top: 1px solid #ddd;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .title-editor label {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .title-editor input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .item-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding-left: 12px;
+            border-left: 1px solid #ddd;
+        }
+        
+        .control-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            transition: all 0.2s;
+        }
+        
+        .control-btn:hover:not(:disabled) {
+            background: #f5f5f5;
+            border-color: #999;
+        }
+        
+        .control-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .control-btn.danger:hover:not(:disabled) {
+            background: #ffebee;
+            border-color: #f44336;
+            color: #f44336;
+        }
+        
+        .multi-select-badge {
+            padding: 4px 10px;
+            background: #FF9800;
+            color: white;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        
+        .type-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .type-selector select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .tree-item {
+            padding: 4px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        
+        .tree-item.nested {
+            padding-left: 20px;
+        }
+        
+        .tree-bullet {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+            display: inline-block;
+        }
+        
+        .tree-bullet.info { background: #FEE25A; }
+        .tree-bullet.function { background: #00B378; }
+        .tree-bullet.case { background: #A96CFF; }
+        
+        .tree-item button {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 2px;
+            font-size: 12px;
+        }
+        
+        .tree-item button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .xml-editor {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 28px;
+            padding: 16px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            border: none;
+            outline: none;
+            resize: none;
+            background: #f8f8f8;
+            white-space: pre;
+            overflow: auto;
+        }
+        
+        .xml-editor.error {
+            border: 2px solid #f44336;
+        }
+        
+        .xml-status {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 28px;
+            padding: 8px 16px;
+            background: #e8f5e9;
+            color: #2e7d32;
+            font-size: 12px;
+            border-top: 1px solid #ddd;
+            line-height: 12px;
+        }
+        
+        .xml-status.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+    </style>
+</head>
+<body tabindex="0">
+    <div class="app-container">
+        <div class="paste-modal" id="pasteModal">
+            <div class="paste-modal-content">
+                <div class="paste-modal-header">
+                    <h3>Paste Multiple Items</h3>
+                    <button class="paste-close-btn" id="pasteCloseBtn">×</button>
+                </div>
+                
+                <div class="paste-info">
+                    💡 Paste text from your clipboard. Each line will create a new <span id="pasteTypeLabel">OBJECT</span>.
+                </div>
+                
+                <textarea class="paste-textarea" id="pasteTextarea" placeholder="Paste your text here... (Ctrl+V / Cmd+V)"></textarea>
+                
+                <div class="paste-preview" id="pastePreview" style="display: none;">
+                    <div class="paste-preview-title">Preview: <span id="previewCount">0</span> items will be created</div>
+                    <div class="paste-preview-list" id="pastePreviewList"></div>
+                </div>
+                
+                <div class="paste-actions">
+                    <button class="paste-btn" id="pasteCancelBtn">Cancel</button>
+                    <button class="paste-btn primary" id="pasteCreateBtn" disabled>Create Items</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="header">
+            <div class="tabs">
+                <button class="tab" id="objectMapTab">Object Map</button>
+                <button class="tab active" id="siteMapTab">Site Map</button>
+            </div>
+            <div class="version-controls">
+                <button class="version-btn" id="versionMinus" disabled>-</button>
+                <select class="version-dropdown" id="versionSelect">
+                    <option value="1">Version 1</option>
+                    <option value="2">Version 2</option>
+                </select>
+                <button class="version-btn" id="versionPlus" disabled>+</button>
+            </div>
+            <div class="action-buttons" id="actionButtons"></div>
+        </div>
+        
+        <div class="main-content">
+            <div class="instances-panel" id="instancesPanel">
+                <h3>Insert Instances</h3>
+                <div id="objectTree"></div>
+            </div>
+            
+            <div class="diagram-container" id="diagramContainer">
+                <div class="diagram-builder">
+                    <div class="diagram-canvas" id="diagramCanvas"></div>
+                </div>
+                <div class="title-editor" id="titleEditor" style="display: none;">
+                    <label>Item Title</label>
+                    <input type="text" id="titleInput">
+                    <div class="type-selector" id="typeSelector" style="display: none;">
+                        <label>Type</label>
+                        <select id="typeSelect">
+                            <option value="info">INFO</option>
+                            <option value="function">FUNCTION</option>
+                            <option value="case">CASE</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="xml-editor-container">
+                <div class="editor-subtabs">
+                    <button class="editor-subtab active" id="xmlEditorTab">XML Editor</button>
+                    <button class="editor-subtab" id="diffListTab">Diff List</button>
+                    <button class="editor-subtab" id="threadTab">Thread</button>
+                </div>
+                <div class="editor-content">
+                    <textarea class="xml-editor" id="xmlEditor" spellCheck="false"></textarea>
+                    <div class="xml-status" id="xmlStatus">XML Valid</div>
+                    
+                    <div class="diff-list-container" id="diffListContainer">
+                        <div class="diff-header">
+                            <select class="diff-dropdown" id="diffFrom">
+                                <option value="1">Version 1</option>
+                            </select>
+                            <span style="font-size: 12px;">→</span>
+                            <select class="diff-dropdown" id="diffTo">
+                                <option value="2">Version 2</option>
+                            </select>
+                        </div>
+                        <div class="diff-list" id="diffList">
+                            <div style="text-align: center; color: #999; padding: 20px;">No changes detected</div>
+                        </div>
+                    </div>
+                    
+                    <div class="thread-container" id="threadContainer">
+                        <div class="thread-messages">
+                            <div class="thread-message">
+                                <div class="thread-header">
+                                    <span class="thread-author">Sarah Chen</span>
+                                    <span class="thread-role po">Product Owner</span>
+                                    <span class="thread-timestamp">2:15 PM</span>
+                                </div>
+                                <div class="thread-content">
+                                    Looking at the price display - should we show prices with decimals? Competitors like Amazon always show cents (.99, .49 etc) but wondering if we should round to whole dollars for a cleaner look. What are the technical implications?
+                                </div>
+                            </div>
+                            
+                            <div class="thread-message">
+                                <div class="thread-header">
+                                    <span class="thread-author">Mike Rodriguez</span>
+                                    <span class="thread-role dev">Developer</span>
+                                    <span class="thread-timestamp">2:23 PM</span>
+                                </div>
+                                <div class="thread-content">
+                                    The API returns prices as integers in cents (e.g., 1999 for $19.99) to avoid floating-point issues. We can display either way, but if we round, we need to decide the rounding logic. Also, for prices ending in .00, should we show "$20" or "$20.00"? This affects the field width in the UI.
+                                </div>
+                            </div>
+                            
+                            <div class="thread-message">
+                                <div class="thread-header">
+                                    <span class="thread-author">Emma Liu</span>
+                                    <span class="thread-role ux">UX Designer</span>
+                                    <span class="thread-timestamp">2:45 PM</span>
+                                </div>
+                                <div class="thread-content">
+                                    I've created a quick wireframe showing both options. The decimal version aligns better in lists and feels more standard for e-commerce. The whole dollar version is cleaner but might confuse users expecting precision.
+                                    <div class="thread-wireframe">Price Display Wireframe Mockup</div>
+                                </div>
+                            </div>
+                            
+                            <div class="thread-message">
+                                <div class="thread-header">
+                                    <span class="thread-author">Sarah Chen</span>
+                                    <span class="thread-role po">Product Owner</span>
+                                    <span class="thread-timestamp">3:10 PM</span>
+                                </div>
+                                <div class="thread-content">
+                                    The wireframe helps a lot! I think the decimal version does look more professional. But can we use ".00" only when necessary? So "$19.99" but "$20" instead of "$20.00"?
+                                </div>
+                            </div>
+                            
+                            <div class="thread-message">
+                                <div class="thread-header">
+                                    <span class="thread-author">Mike Rodriguez</span>
+                                    <span class="thread-role dev">Developer</span>
+                                    <span class="thread-timestamp">3:18 PM</span>
+                                </div>
+                                <div class="thread-content">
+                                    That's doable with a simple formatter function. I'll strip trailing zeros after the decimal point. So: $19.99 stays as is, $20.00 becomes $20, and $20.50 stays $20.50. This gives us the best of both worlds.
+                                </div>
+                            </div>
+                            
+                            <div class="thread-message">
+                                <div class="thread-header">
+                                    <span class="thread-author">Emma Liu</span>
+                                    <span class="thread-role ux">UX Designer</span>
+                                    <span class="thread-timestamp">3:22 PM</span>
+                                </div>
+                                <div class="thread-content">
+                                    Perfect! I'll update the design specs with this logic. We should also consider adding a tooltip on hover that shows "Including tax" or "Plus tax" depending on the region settings.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="thread-input-container">
+                            <input type="text" class="thread-input" placeholder="Type a message...">
+                            <button class="thread-send-button">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        'use strict';
+        
+        // Default XML - Blank State
+        const defaultXML = `<?xml version="1.0" encoding="UTF-8"?>
+<xml>
+  <Diagram>
+    <ObjectMap>
+    </ObjectMap>
+    <SiteMap>
+    </SiteMap>
+  </Diagram>
+</xml>`;
+
+        // Global State - ALL variables defined here
+        window.activeTab = 'SiteMap';
+        window.xmlContent = defaultXML;
+        window.parsedData = null;
+        window.selectedItem = null;
+        window.registry = {};
+        window.isUpdatingFromUI = false;
+        window.linkingMode = false;
+        window.linkingSource = null;
+        window.currentVersion = 1;
+        window.versions = {
+            1: defaultXML,
+            2: defaultXML  // Start with identical XML
+        };
+        window.highlightedDiffItem = null;
+        window.activeEditorTab = 'xml';
+        window.multiSelectedItems = new Set();
+        window.draggedItems = [];
+        window.lastClickedItem = null;
+        window.dragOverPosition = null; // 'top', 'bottom', or 'inside'
+        window.undoStack = [];
+        window.maxUndoStack = 50;
+
+        // Initialize
+        document.getElementById('xmlEditor').value = xmlContent;
+        
+        // Subtab switching
+        document.getElementById('xmlEditorTab').addEventListener('click', () => {
+            setActiveEditorTab('xml');
+        });
+        
+        document.getElementById('diffListTab').addEventListener('click', () => {
+            setActiveEditorTab('diff');
+            updateDiffList();
+        });
+        
+        document.getElementById('threadTab').addEventListener('click', () => {
+            setActiveEditorTab('thread');
+        });
+        
+        function setActiveEditorTab(tab) {
+            // Don't allow switching to Thread if no item selected
+            if (tab === 'thread' && !window.selectedItem) {
+                return;
+            }
+            
+            window.activeEditorTab = tab;
+            
+            // Update tab styles
+            document.getElementById('xmlEditorTab').classList.toggle('active', tab === 'xml');
+            document.getElementById('diffListTab').classList.toggle('active', tab === 'diff');
+            document.getElementById('threadTab').classList.toggle('active', tab === 'thread');
+            
+            // Show/hide content
+            document.getElementById('xmlEditor').style.display = tab === 'xml' ? 'block' : 'none';
+            document.getElementById('xmlStatus').style.display = tab === 'xml' ? 'block' : 'none';
+            document.getElementById('diffListContainer').classList.toggle('active', tab === 'diff');
+            document.getElementById('threadContainer').classList.toggle('active', tab === 'thread');
+            
+            // Re-render diagram to show/hide diff indicators based on active tab
+            renderDiagram();
+        }
+        
+        function updateThreadTabState() {
+            const threadTab = document.getElementById('threadTab');
+            if (window.selectedItem) {
+                threadTab.disabled = false;
+            } else {
+                threadTab.disabled = true;
+                // If thread tab is active and item is deselected, switch to XML Editor
+                if (window.activeEditorTab === 'thread') {
+                    setActiveEditorTab('xml');
+                }
+            }
+        }
+        
+        // Version switching
+        document.getElementById('versionSelect').addEventListener('change', (e) => {
+            loadVersion(parseInt(e.target.value));
+        });
+        
+        function loadVersion(versionNumber) {
+            window.currentVersion = versionNumber;
+            window.xmlContent = window.versions[versionNumber];
+            document.getElementById('xmlEditor').value = window.xmlContent;
+            window.isUpdatingFromUI = false;
+            parseXML();
+            if (window.activeEditorTab === 'diff') {
+                updateDiffList();
+            }
+        }
+        
+        // Tab switching
+        document.getElementById('objectMapTab').addEventListener('click', () => {
+            clearMultiSelection();
+            setActiveTab('ObjectMap');
+        });
+        
+        document.getElementById('siteMapTab').addEventListener('click', () => {
+            clearMultiSelection();
+            setActiveTab('SiteMap');
+        });
+        
+        function clearMultiSelection() {
+            if (window.multiSelectedItems.size > 0) {
+                window.multiSelectedItems.clear();
+                window.selectedItem = null;
+                renderDiagram();
+                renderActionButtons();
+                updateObjectTree();
+                updateThreadTabState();
+                updateTitleEditor();
+            }
+        }
+        
+        function setActiveTab(tab) {
+            window.activeTab = tab;
+            document.getElementById('objectMapTab').classList.toggle('active', tab === 'ObjectMap');
+            document.getElementById('siteMapTab').classList.toggle('active', tab === 'SiteMap');
+            
+            const instancesPanel = document.getElementById('instancesPanel');
+            const diagramContainer = document.getElementById('diagramContainer');
+            
+            if (tab === 'SiteMap') {
+                instancesPanel.classList.remove('hidden');
+                diagramContainer.classList.remove('expanded');
+            } else {
+                instancesPanel.classList.add('hidden');
+                diagramContainer.classList.add('expanded');
+            }
+            
+            renderActionButtons();
+            renderDiagram();
+        }
+        
+        function renderActionButtons() {
+            const container = document.getElementById('actionButtons');
+            container.innerHTML = '';
+            
+            const l1iButton = document.createElement('button');
+            l1iButton.className = window.activeTab === 'ObjectMap' ? 'action-button object' : 'action-button page';
+            l1iButton.textContent = window.activeTab === 'ObjectMap' ? '+ OBJECT' : '+ PAGE';
+            l1iButton.onclick = () => insertItem(window.activeTab === 'ObjectMap' ? 'object' : 'page', null);
+            container.appendChild(l1iButton);
+            
+            // Add PASTE button
+            const pasteButton = document.createElement('button');
+            pasteButton.className = 'action-button paste';
+            pasteButton.textContent = '📋 PASTE MULTIPLE';
+            pasteButton.onclick = openPasteModal;
+            container.appendChild(pasteButton);
+            
+            const nlButtons = [
+                { class: 'info', text: '+ INFO', type: 'info' },
+                { class: 'function', text: '+ FUNCTION', type: 'function' },
+                { class: 'case', text: '+ CASE', type: 'case' }
+            ];
+            
+            nlButtons.forEach(btn => {
+                const button = document.createElement('button');
+                button.className = `action-button ${btn.class}`;
+                button.textContent = btn.text;
+                button.disabled = !window.selectedItem;
+                button.onclick = () => insertItem(btn.type, null);
+                container.appendChild(button);
+            });
+        }
+        
+        // XML Editor handling
+        document.getElementById('xmlEditor').addEventListener('input', (e) => {
+            if (window.isUpdatingFromUI) {
+                window.isUpdatingFromUI = false;
+                return;
+            }
+            saveUndoState();
+            window.xmlContent = e.target.value;
+            // Update the current version's XML
+            window.versions[window.currentVersion] = window.xmlContent;
+            parseXML();
+            // Update diff list if it's visible
+            if (window.activeEditorTab === 'diff') {
+                updateDiffList();
+            }
+        });
+        
+        function parseXML() {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(window.xmlContent, "text/xml");
+                
+                const parserError = xmlDoc.querySelector("parsererror");
+                if (parserError) {
+                    showXMLError("Parse error");
+                    return;
+                }
+                
+                const diagram = xmlDoc.querySelector("Diagram");
+                if (!diagram) {
+                    showXMLError("Missing <Diagram>");
+                    return;
+                }
+                
+                window.registry = {};
+                window.parsedData = {
+                    objectMap: parseColumns(diagram.querySelector("ObjectMap"), 'Object'),
+                    siteMap: parseColumns(diagram.querySelector("SiteMap"), 'Page')
+                };
+                
+                showXMLValid();
+                renderDiagram();
+                updateObjectTree();
+                
+            } catch (e) {
+                showXMLError(e.message);
+            }
+        }
+        
+        function parseColumns(mapElement, itemTagName) {
+            if (!mapElement) return [];
+            const columns = [];
+            
+            for (let columnEl of mapElement.querySelectorAll(':scope > Column')) {
+                const columnItems = [];
+                
+                for (let itemEl of columnEl.children) {
+                    if (itemEl.tagName === itemTagName || itemEl.tagName === 'Page') {
+                        const item = parseItem(itemEl, 0);
+                        item.columnIndex = columns.length;
+                        columnItems.push(item);
+                    }
+                }
+                
+                columns.push(columnItems);
+            }
+            
+            return columns;
+        }
+        
+        function parseItem(element, nestingLevel) {
+            const id = element.getAttribute('id');
+            const item = {
+                id: id,
+                type: element.tagName.toLowerCase(),
+                title: element.getAttribute('title') || '',
+                nestingLevel: nestingLevel,
+                instanceOf: element.getAttribute('instanceOf'),
+                linkTo: element.getAttribute('linkTo'),
+                children: []
+            };
+            
+            if (id) window.registry[id] = item;
+            
+            for (let child of element.children) {
+                if (['Info', 'Function', 'Case'].includes(child.tagName)) {
+                    item.children.push(parseItem(child, nestingLevel + 1));
+                }
+            }
+            
+            return item;
+        }
+        
+        function showXMLValid() {
+            const status = document.getElementById('xmlStatus');
+            const editor = document.getElementById('xmlEditor');
+            status.textContent = 'XML Valid';
+            status.classList.remove('error');
+            editor.classList.remove('error');
+        }
+        
+        function showXMLError(message) {
+            const status = document.getElementById('xmlStatus');
+            const editor = document.getElementById('xmlEditor');
+            status.textContent = 'Error: ' + message;
+            status.classList.add('error');
+            editor.classList.add('error');
+        }
+        
+        // ===== UNDO/REDO FUNCTIONALITY =====
+        
+        function saveUndoState() {
+            // Save current state to undo stack
+            window.undoStack.push(window.xmlContent);
+            
+            // Limit stack size
+            if (window.undoStack.length > window.maxUndoStack) {
+                window.undoStack.shift();
+            }
+        }
+        
+        function undo() {
+            if (window.undoStack.length === 0) return;
+            
+            const previousState = window.undoStack.pop();
+            window.xmlContent = previousState;
+            window.versions[window.currentVersion] = previousState;
+            
+            document.getElementById('xmlEditor').value = previousState;
+            window.isUpdatingFromUI = false;
+            parseXML();
+            
+            if (window.activeEditorTab === 'diff') {
+                updateDiffList();
+            }
+        }
+        
+        // ===== TITLE EDITOR AND CONTROL FUNCTIONS =====
+        
+        function updateTitleEditor() {
+            const editor = document.getElementById('titleEditor');
+            const input = document.getElementById('titleInput');
+            const typeSelector = document.getElementById('typeSelector');
+            const typeSelect = document.getElementById('typeSelect');
+            
+            // Check if we're in multi-select mode
+            const isMultiSelect = window.multiSelectedItems.size > 1;
+            
+            if ((window.selectedItem && window.registry[window.selectedItem]) || isMultiSelect) {
+                editor.style.display = 'flex';
+                
+                if (isMultiSelect) {
+                    // Multi-select mode
+                    input.style.display = 'none';
+                    
+                    // Show badge with count
+                    let badge = editor.querySelector('.multi-select-badge');
+                    if (!badge) {
+                        badge = document.createElement('span');
+                        badge.className = 'multi-select-badge';
+                        editor.insertBefore(badge, editor.firstChild);
+                    }
+                    badge.textContent = `${window.multiSelectedItems.size} items selected`;
+                    
+                    // Show type selector if all selected items are NL1I and not instances
+                    const selectedItems = Array.from(window.multiSelectedItems).map(id => window.registry[id]);
+                    const allNL1I = selectedItems.every(item => item && item.nestingLevel > 0 && !item.instanceOf);
+                    
+                    if (allNL1I) {
+                        typeSelector.style.display = 'flex';
+                        // Set to first item's type as placeholder
+                        typeSelect.value = selectedItems[0].type;
+                    } else {
+                        typeSelector.style.display = 'none';
+                    }
+                    
+                } else {
+                    // Single select mode
+                    const badge = editor.querySelector('.multi-select-badge');
+                    if (badge) badge.remove();
+                    
+                    input.style.display = 'block';
+                    const item = window.registry[window.selectedItem];
+                    
+                    // Show/hide type selector for NL1I items (not instances)
+                    if (item.nestingLevel > 0 && !item.instanceOf) {
+                        typeSelector.style.display = 'flex';
+                        typeSelect.value = item.type;
+                    } else {
+                        typeSelector.style.display = 'none';
+                    }
+                    
+                    if (item.instanceOf && window.registry[item.instanceOf]) {
+                        input.value = window.registry[item.instanceOf].title;
+                    } else {
+                        input.value = item.title;
+                    }
+                }
+                
+                // Update control buttons
+                updateControlButtons();
+                
+                document.body.focus();
+            } else {
+                editor.style.display = 'none';
+            }
+        }
+        
+        function updateControlButtons() {
+            const editor = document.getElementById('titleEditor');
+            let controls = editor.querySelector('.item-controls');
+            
+            // Remove existing controls if any
+            if (controls) controls.remove();
+            
+            // Create new controls
+            controls = document.createElement('div');
+            controls.className = 'item-controls';
+            
+            const isMultiSelect = window.multiSelectedItems.size > 1;
+            
+            if (isMultiSelect) {
+                // Multi-select controls: unnest, duplicate, delete
+                
+                // Unnest button
+                const unnestBtn = document.createElement('button');
+                unnestBtn.className = 'control-btn';
+                unnestBtn.innerHTML = '⬅';
+                unnestBtn.title = 'Unnest selected items';
+                const selectedItems = Array.from(window.multiSelectedItems).map(id => window.registry[id]);
+                const canUnnest = selectedItems.every(item => item && item.nestingLevel > 0);
+                unnestBtn.disabled = !canUnnest;
+                unnestBtn.onclick = () => unnestMultipleItems();
+                controls.appendChild(unnestBtn);
+                
+                // Duplicate button
+                const duplicateBtn = document.createElement('button');
+                duplicateBtn.className = 'control-btn';
+                duplicateBtn.innerHTML = '⧉';
+                duplicateBtn.title = 'Duplicate selected items';
+                duplicateBtn.onclick = () => duplicateMultipleItems();
+                controls.appendChild(duplicateBtn);
+                
+                // Delete button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'control-btn danger';
+                deleteBtn.innerHTML = '🗑';
+                deleteBtn.title = 'Delete selected items';
+                deleteBtn.onclick = () => deleteMultipleItems();
+                controls.appendChild(deleteBtn);
+                
+            } else if (window.selectedItem && window.registry[window.selectedItem]) {
+                // Single select controls: up, down, unnest, duplicate, delete
+                const item = window.registry[window.selectedItem];
+                
+                // Move up button
+                const upBtn = document.createElement('button');
+                upBtn.className = 'control-btn';
+                upBtn.innerHTML = '↑';
+                upBtn.title = 'Move up';
+                upBtn.onclick = () => {
+                    if (moveItemUp()) {
+                        updateXMLFromData(true);
+                        parseXML();
+                        selectItem(window.selectedItem);
+                    }
+                };
+                controls.appendChild(upBtn);
+                
+                // Move down button
+                const downBtn = document.createElement('button');
+                downBtn.className = 'control-btn';
+                downBtn.innerHTML = '↓';
+                downBtn.title = 'Move down';
+                downBtn.onclick = () => {
+                    if (moveItemDown()) {
+                        updateXMLFromData(true);
+                        parseXML();
+                        selectItem(window.selectedItem);
+                    }
+                };
+                controls.appendChild(downBtn);
+                
+                // Unnest button
+                const unnestBtn = document.createElement('button');
+                unnestBtn.className = 'control-btn';
+                unnestBtn.innerHTML = '⬅';
+                unnestBtn.title = 'Unnest (convert to INFO and move out)';
+                unnestBtn.disabled = item.nestingLevel === 0;
+                unnestBtn.onclick = () => unnestItem();
+                controls.appendChild(unnestBtn);
+                
+                // Duplicate button
+                const duplicateBtn = document.createElement('button');
+                duplicateBtn.className = 'control-btn';
+                duplicateBtn.innerHTML = '⧉';
+                duplicateBtn.title = 'Duplicate item';
+                duplicateBtn.onclick = () => duplicateItem();
+                controls.appendChild(duplicateBtn);
+                
+                // Delete button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'control-btn danger';
+                deleteBtn.innerHTML = '🗑';
+                deleteBtn.title = 'Delete item';
+                deleteBtn.onclick = () => deleteItem();
+                controls.appendChild(deleteBtn);
+            }
+            
+            editor.appendChild(controls);
+        }
+        
+        // ===== NEW CONTROL FUNCTIONS =====
+        
+        function unnestItem() {
+            if (!window.selectedItem || !window.registry[window.selectedItem]) return;
+            
+            saveUndoState();
+            
+            const item = window.registry[window.selectedItem];
+            if (item.nestingLevel === 0) return; // Already at top level
+            
+            const parent = findParent(item);
+            if (!parent) return;
+            
+            // Remove from parent's children
+            const itemIndex = parent.children.findIndex(c => c.id === item.id);
+            if (itemIndex === -1) return;
+            parent.children.splice(itemIndex, 1);
+            
+            // Convert to INFO if it was something else
+            item.type = 'info';
+            
+            // Add to same column as parent if parent is L1I, or parent's parent column
+            const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+            
+            if (parent.nestingLevel === 0) {
+                // Parent is L1I, add to same column
+                const colIndex = findItemColumn(parent.id);
+                const parentIndex = columns[colIndex].findIndex(i => i.id === parent.id);
+                
+                item.nestingLevel = 0;
+                updateNestingLevels(item, 0);
+                
+                columns[colIndex].splice(parentIndex + 1, 0, item);
+            } else {
+                // Parent is NL1I, add as sibling
+                const grandparent = findParent(parent);
+                if (grandparent) {
+                    const parentIndex = grandparent.children.findIndex(c => c.id === parent.id);
+                    
+                    item.nestingLevel = parent.nestingLevel;
+                    updateNestingLevels(item, parent.nestingLevel);
+                    
+                    grandparent.children.splice(parentIndex + 1, 0, item);
+                }
+            }
+            
+            updateXMLFromData(true);
+            parseXML();
+            selectItem(item.id);
+        }
+        
+        function unnestMultipleItems() {
+            saveUndoState();
+            
+            const selectedItems = Array.from(window.multiSelectedItems).map(id => window.registry[id]);
+            const canUnnest = selectedItems.every(item => item && item.nestingLevel > 0);
+            
+            if (!canUnnest) return;
+            
+            selectedItems.forEach(item => {
+                if (!item || item.nestingLevel === 0) return;
+                
+                const parent = findParent(item);
+                if (!parent) return;
+                
+                // Remove from parent's children
+                const itemIndex = parent.children.findIndex(c => c.id === item.id);
+                if (itemIndex === -1) return;
+                parent.children.splice(itemIndex, 1);
+                
+                // Convert to INFO
+                item.type = 'info';
+                
+                // Add to same level as parent
+                const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+                
+                if (parent.nestingLevel === 0) {
+                    const colIndex = findItemColumn(parent.id);
+                    const parentIndex = columns[colIndex].findIndex(i => i.id === parent.id);
+                    
+                    item.nestingLevel = 0;
+                    updateNestingLevels(item, 0);
+                    
+                    columns[colIndex].splice(parentIndex + 1, 0, item);
+                } else {
+                    const grandparent = findParent(parent);
+                    if (grandparent) {
+                        const parentIndex = grandparent.children.findIndex(c => c.id === parent.id);
+                        
+                        item.nestingLevel = parent.nestingLevel;
+                        updateNestingLevels(item, parent.nestingLevel);
+                        
+                        grandparent.children.splice(parentIndex + 1, 0, item);
+                    }
+                }
+            });
+            
+            window.multiSelectedItems.clear();
+            updateXMLFromData(true);
+            parseXML();
+        }
+        
+        function duplicateItem() {
+            if (!window.selectedItem || !window.registry[window.selectedItem]) return;
+            
+            saveUndoState();
+            
+            const original = window.registry[window.selectedItem];
+            const duplicate = duplicateSingleItem(original);
+            
+            updateXMLFromData(true);
+            parseXML();
+            selectItem(duplicate.id);
+        }
+        
+        function duplicateMultipleItems() {
+            saveUndoState();
+            
+            const selectedItems = Array.from(window.multiSelectedItems).map(id => window.registry[id]);
+            
+            selectedItems.forEach(item => {
+                if (item) duplicateSingleItem(item);
+            });
+            
+            window.multiSelectedItems.clear();
+            updateXMLFromData(true);
+            parseXML();
+        }
+        
+        function duplicateSingleItem(item) {
+            const duplicate = JSON.parse(JSON.stringify(item)); // Deep clone
+            
+            // Generate new IDs for duplicate and all children
+            function regenerateIds(node) {
+                node.id = generateUniqueId(node.type);
+                node.children.forEach(child => regenerateIds(child));
+            }
+            regenerateIds(duplicate);
+            
+            // Insert duplicate next to original
+            const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+            
+            if (item.nestingLevel === 0) {
+                // L1I - add to same column
+                const colIndex = findItemColumn(item.id);
+                const itemIndex = columns[colIndex].findIndex(i => i.id === item.id);
+                columns[colIndex].splice(itemIndex + 1, 0, duplicate);
+            } else {
+                // NL1I - add as sibling
+                const parent = findParent(item);
+                if (parent) {
+                    const itemIndex = parent.children.findIndex(c => c.id === item.id);
+                    parent.children.splice(itemIndex + 1, 0, duplicate);
+                }
+            }
+            
+            return duplicate;
+        }
+        
+        function deleteMultipleItems() {
+            saveUndoState();
+            
+            const itemsToDelete = Array.from(window.multiSelectedItems);
+            itemsToDelete.forEach(itemId => {
+                deleteItemById(itemId);
+            });
+            
+            window.multiSelectedItems.clear();
+            window.selectedItem = null;
+            
+            cleanupEmptyColumns();
+            updateXMLFromData(true);
+            parseXML();
+            renderActionButtons();
+            updateObjectTree();
+            updateThreadTabState();
+            document.getElementById('titleEditor').style.display = 'none';
+        }
+        
+        function renderDiagram() {
+            if (!window.parsedData) return;
+            
+            const canvas = document.getElementById('diagramCanvas');
+            canvas.innerHTML = '';
+            
+            const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+            
+            columns.forEach((columnItems, colIndex) => {
+                const columnDiv = document.createElement('div');
+                columnDiv.className = 'diagram-column';
+                columnDiv.dataset.columnIndex = colIndex;
+                
+                const maxNesting = getMaxNesting(columnItems);
+                columnDiv.style.width = (300 + maxNesting * 30) + 'px';
+                
+                columnItems.forEach(item => {
+                    renderItem(item, columnDiv);
+                });
+                
+                canvas.appendChild(columnDiv);
+            });
+            
+            // Draw arrows after a delay to ensure DOM is ready
+            setTimeout(() => drawAllArrows(), 100);
+        }
+        
+        function getMaxNesting(items) {
+            let max = 0;
+            
+            function traverse(item) {
+                max = Math.max(max, item.nestingLevel);
+                item.children.forEach(child => traverse(child));
+            }
+            
+            items.forEach(item => traverse(item));
+            return max;
+        }
+        
+        function renderItem(item, container) {
+            const div = document.createElement('div');
+            div.className = `diagram-item nested-${item.nestingLevel}`;
+            div.dataset.itemId = item.id;
+            div.draggable = true;
+            
+            // Add diff status classes only if Diff List or Thread tab is active
+            const showDiff = window.activeEditorTab === 'diff' || window.activeEditorTab === 'thread';
+            const diffStatus = showDiff ? getItemDiffStatus(item.id) : null;
+            if (diffStatus) {
+                div.classList.add(`diff-${diffStatus.type}`);
+            }
+            
+            if (window.selectedItem === item.id) div.classList.add('selected');
+            if (window.multiSelectedItems.has(item.id)) div.classList.add('multi-selected');
+            
+            if (window.linkingMode) {
+                if (window.linkingSource === item.id) {
+                    div.classList.add('linking-source');
+                } else if (isValidLinkTarget(item.id)) {
+                    div.classList.add('linking-target');
+                } else {
+                    div.classList.add('linking-invalid');
+                }
+            }
+            
+            const header = document.createElement('div');
+            header.className = 'item-header';
+            
+            // Add multi-selection badge
+            if (window.multiSelectedItems.size > 1 && window.multiSelectedItems.has(item.id)) {
+                const badge = document.createElement('div');
+                badge.className = 'multi-drag-badge';
+                badge.textContent = window.multiSelectedItems.size;
+                div.appendChild(badge);
+            }
+            
+            // Add diff badge only if showing diff
+            if (diffStatus && showDiff) {
+                const badge = document.createElement('span');
+                badge.className = `item-diff-badge ${diffStatus.type}`;
+                badge.textContent = diffStatus.type === 'added' ? '+' : 
+                                   diffStatus.type === 'removed' ? '-' : 
+                                   diffStatus.type === 'moved' ? '⊹' : '↻';
+                header.appendChild(badge);
+            }
+            
+            const type = document.createElement('span');
+            type.className = `item-type ${item.type}`;
+            type.textContent = item.type.toUpperCase();
+            
+            const title = document.createElement('span');
+            title.className = 'item-title';
+            
+            if (item.instanceOf && window.registry[item.instanceOf]) {
+                const original = window.registry[item.instanceOf];
+                title.textContent = original.title;
+                
+                const indicator = document.createElement('div');
+                indicator.className = `instance-indicator ${original.type}`;
+                header.appendChild(type);
+                header.appendChild(title);
+                
+                // Add reference to original object (only in SiteMap for INFO instances)
+                if (window.activeTab === 'SiteMap' && original.type === 'info') {
+                    const parentObject = findOriginalObjectParent(original.id);
+                    if (parentObject) {
+                        const reference = document.createElement('span');
+                        reference.className = 'item-reference';
+                        reference.textContent = `> ${parentObject.title.toUpperCase()}`;
+                        header.appendChild(reference);
+                    }
+                }
+                
+                header.appendChild(indicator);
+            } else {
+                title.textContent = item.title;
+                header.appendChild(type);
+                header.appendChild(title);
+            }
+            
+            // Add link button
+            const linkBtn = document.createElement('button');
+            linkBtn.className = 'link-button';
+            linkBtn.innerHTML = '→';
+            linkBtn.onclick = function(e) {
+                e.stopPropagation();
+                startLinkingMode(item.id);
+            };
+            header.appendChild(linkBtn);
+            
+            div.appendChild(header);
+            
+            // Drag and Drop event listeners
+            div.addEventListener('dragstart', handleDragStart);
+            div.addEventListener('dragover', handleDragOver);
+            div.addEventListener('dragleave', handleDragLeave);
+            div.addEventListener('drop', handleDrop);
+            div.addEventListener('dragend', handleDragEnd);
+            
+            div.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (window.linkingMode && window.linkingSource !== item.id) {
+                    if (isValidLinkTarget(item.id)) {
+                        createLink(window.linkingSource, item.id);
+                        exitLinkingMode();
+                    }
+                } else if (!window.linkingMode) {
+                    // Multi-selection with Shift key
+                    if (e.shiftKey) {
+                        if (window.multiSelectedItems.has(item.id)) {
+                            window.multiSelectedItems.delete(item.id);
+                            if (window.multiSelectedItems.size === 0) {
+                                window.selectedItem = null;
+                            }
+                        } else {
+                            window.multiSelectedItems.add(item.id);
+                            window.selectedItem = item.id;
+                        }
+                        window.lastClickedItem = item.id;
+                        renderDiagram();
+                        renderActionButtons();
+                        updateObjectTree();
+                        updateThreadTabState();
+                        updateTitleEditor();
+                    } else {
+                        // Regular selection - clear multi-selection
+                        window.multiSelectedItems.clear();
+                        selectItem(item.id);
+                    }
+                }
+            });
+            
+            // Double-click to navigate to original in ObjectMap
+            div.addEventListener('dblclick', function(e) {
+                e.stopPropagation();
+                
+                // Only if in SiteMap and item is an INFO instance
+                if (window.activeTab === 'SiteMap' && item.instanceOf) {
+                    const originalItem = window.registry[item.instanceOf];
+                    if (originalItem && originalItem.type === 'info') {
+                        // Switch to ObjectMap and select the original item
+                        setActiveTab('ObjectMap');
+                        setTimeout(() => {
+                            selectItem(originalItem.id);
+                            
+                            // Scroll to the item
+                            const itemElement = document.querySelector(`[data-item-id="${originalItem.id}"]`);
+                            if (itemElement) {
+                                itemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }, 100);
+                    }
+                }
+            });
+            
+            container.appendChild(div);
+            
+            item.children.forEach(child => {
+                renderItem(child, container);
+            });
+        }
+        
+        // ===== DRAG AND DROP HANDLERS =====
+        
+        function handleDragStart(e) {
+            e.stopPropagation();
+            const itemId = e.currentTarget.dataset.itemId;
+            
+            // If item is part of multi-selection, drag all selected items
+            if (window.multiSelectedItems.has(itemId) && window.multiSelectedItems.size > 1) {
+                window.draggedItems = Array.from(window.multiSelectedItems);
+            } else {
+                // Single item drag
+                window.multiSelectedItems.clear();
+                window.multiSelectedItems.add(itemId);
+                window.draggedItems = [itemId];
+            }
+            
+            e.currentTarget.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', itemId);
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const targetEl = e.currentTarget;
+            const targetId = targetEl.dataset.itemId;
+            
+            // Don't allow dropping on itself or its children
+            if (window.draggedItems.includes(targetId)) {
+                e.dataTransfer.dropEffect = 'none';
+                return;
+            }
+            
+            // Check if target is a child of any dragged item
+            const isChildOfDragged = window.draggedItems.some(draggedId => {
+                return isDescendantOf(targetId, draggedId);
+            });
+            
+            if (isChildOfDragged) {
+                e.dataTransfer.dropEffect = 'none';
+                return;
+            }
+            
+            const targetItem = window.registry[targetId];
+            
+            // Check if any dragged items are INFO
+            const draggedHasInfo = window.draggedItems.some(draggedId => {
+                const draggedItem = window.registry[draggedId];
+                return draggedItem && (draggedItem.type === 'info' || draggedItem.type === 'function' || draggedItem.type === 'case');
+            });
+            
+            e.dataTransfer.dropEffect = 'move';
+            
+            // Calculate position based on mouse Y relative to element
+            const rect = targetEl.getBoundingClientRect();
+            const mouseY = e.clientY - rect.top;
+            const elementHeight = rect.height;
+            
+            // Remove all drag-over classes first
+            targetEl.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-inside');
+            
+            // Determine drop zone: top 25%, middle 50%, bottom 25%
+            if (mouseY < elementHeight * 0.25) {
+                // TOP: Only allow if target is L1I (object/page) and dragged items are also L1I
+                if (targetItem.nestingLevel === 0 && !draggedHasInfo) {
+                    window.dragOverPosition = 'top';
+                    targetEl.classList.add('drag-over-top');
+                } else {
+                    window.dragOverPosition = 'inside';
+                    targetEl.classList.add('drag-over-inside');
+                }
+            } else if (mouseY > elementHeight * 0.75) {
+                // BOTTOM: Only allow if target is L1I (object/page) and dragged items are also L1I
+                if (targetItem.nestingLevel === 0 && !draggedHasInfo) {
+                    window.dragOverPosition = 'bottom';
+                    targetEl.classList.add('drag-over-bottom');
+                } else {
+                    window.dragOverPosition = 'inside';
+                    targetEl.classList.add('drag-over-inside');
+                }
+            } else {
+                window.dragOverPosition = 'inside';
+                targetEl.classList.add('drag-over-inside');
+            }
+        }
+        
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-inside');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const targetEl = e.currentTarget;
+            const targetId = targetEl.dataset.itemId;
+            
+            targetEl.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-inside');
+            
+            // Don't allow dropping on itself or its children
+            if (window.draggedItems.includes(targetId)) {
+                return;
+            }
+            
+            // Check if target is a child of any dragged item
+            const isChildOfDragged = window.draggedItems.some(draggedId => {
+                return isDescendantOf(targetId, draggedId);
+            });
+            
+            if (isChildOfDragged) {
+                return;
+            }
+            
+            const targetItem = window.registry[targetId];
+            if (!targetItem) return;
+            
+            const dropPosition = window.dragOverPosition || 'inside';
+            
+            saveUndoState();
+            
+            if (dropPosition === 'inside') {
+                // INSIDE: Convert and move all dragged items as children
+                window.draggedItems.forEach(draggedId => {
+                    const draggedItem = window.registry[draggedId];
+                    if (!draggedItem) return;
+                    
+                    // Remove from current location
+                    removeItemFromLocation(draggedItem);
+                    
+                    // Convert to INFO type if it's an L1I (object or page)
+                    if (draggedItem.nestingLevel === 0) {
+                        draggedItem.type = 'info';
+                    }
+                    
+                    // Add as child to target
+                    draggedItem.nestingLevel = targetItem.nestingLevel + 1;
+                    targetItem.children.push(draggedItem);
+                    
+                    // Update nesting levels recursively for all children
+                    updateNestingLevels(draggedItem, draggedItem.nestingLevel);
+                });
+            } else {
+                // TOP or BOTTOM: Reorder items at the same level (only for L1I)
+                const targetParent = findParent(targetItem);
+                
+                window.draggedItems.forEach(draggedId => {
+                    const draggedItem = window.registry[draggedId];
+                    if (!draggedItem) return;
+                    
+                    // Remove from current location
+                    removeItemFromLocation(draggedItem);
+                    
+                    // If target is L1I, work with columns
+                    if (targetItem.nestingLevel === 0) {
+                        const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+                        const targetColIndex = findItemColumn(targetId);
+                        const targetColumn = columns[targetColIndex];
+                        
+                        if (!targetColumn) return;
+                        
+                        const targetIndex = targetColumn.findIndex(i => i.id === targetId);
+                        const insertIndex = dropPosition === 'top' ? targetIndex : targetIndex + 1;
+                        
+                        // Ensure dragged item is L1I level
+                        draggedItem.nestingLevel = 0;
+                        draggedItem.children.forEach(child => updateNestingLevels(child, 1));
+                        
+                        targetColumn.splice(insertIndex, 0, draggedItem);
+                    } else {
+                        // Target is NL1I, work with parent's children
+                        if (!targetParent) return;
+                        
+                        const targetIndex = targetParent.children.findIndex(c => c.id === targetId);
+                        const insertIndex = dropPosition === 'top' ? targetIndex : targetIndex + 1;
+                        
+                        // Ensure dragged item has correct nesting level
+                        draggedItem.nestingLevel = targetItem.nestingLevel;
+                        updateNestingLevels(draggedItem, draggedItem.nestingLevel);
+                        
+                        targetParent.children.splice(insertIndex, 0, draggedItem);
+                    }
+                });
+            }
+            
+            // Clean up empty columns
+            cleanupEmptyColumns();
+            
+            // Update and re-render
+            window.multiSelectedItems.clear();
+            window.dragOverPosition = null;
+            updateXMLFromData(true);
+            parseXML();
+            selectItem(targetId);
+        }
+        
+        function handleDragEnd(e) {
+            e.currentTarget.classList.remove('dragging');
+            
+            // Remove all drag-over classes
+            document.querySelectorAll('.drag-over-top, .drag-over-bottom, .drag-over-inside').forEach(el => {
+                el.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-inside');
+            });
+            
+            window.draggedItems = [];
+            window.dragOverPosition = null;
+        }
+        
+        function findOriginalObjectParent(infoId) {
+            // Find the OBJECT that contains this INFO in ObjectMap
+            if (!window.parsedData || !window.parsedData.objectMap) return null;
+            
+            function searchInItems(items) {
+                for (let item of items) {
+                    // Check if this item's children contain the info
+                    if (item.children.some(child => child.id === infoId)) {
+                        return item;
+                    }
+                    // Recursively search in children
+                    const found = searchInItems(item.children);
+                    if (found) return found;
+                }
+                return null;
+            }
+            
+            for (let column of window.parsedData.objectMap) {
+                const found = searchInItems(column);
+                if (found) return found;
+            }
+            
+            return null;
+        }
+        
+        function isDescendantOf(childId, parentId) {
+            const parent = window.registry[parentId];
+            if (!parent) return false;
+            
+            function searchChildren(item) {
+                if (item.id === childId) return true;
+                return item.children.some(child => searchChildren(child));
+            }
+            
+            return searchChildren(parent);
+        }
+        
+        function removeItemFromLocation(item) {
+            const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+            
+            if (item.nestingLevel === 0) {
+                // Remove from column
+                for (let column of columns) {
+                    const index = column.findIndex(i => i.id === item.id);
+                    if (index !== -1) {
+                        column.splice(index, 1);
+                        return;
+                    }
+                }
+            } else {
+                // Remove from parent's children
+                const parent = findParent(item);
+                if (parent) {
+                    const index = parent.children.findIndex(c => c.id === item.id);
+                    if (index !== -1) {
+                        parent.children.splice(index, 1);
+                    }
+                }
+            }
+        }
+        
+        function selectItem(id) {
+            window.selectedItem = id;
+            renderDiagram();
+            renderActionButtons();
+            updateObjectTree();
+            updateThreadTabState();  // Update Thread tab state
+            
+            const editor = document.getElementById('titleEditor');
+            const input = document.getElementById('titleInput');
+            const typeSelector = document.getElementById('typeSelector');
+            const typeSelect = document.getElementById('typeSelect');
+            
+            if (window.selectedItem && window.registry[window.selectedItem]) {
+                editor.style.display = 'flex';
+                const item = window.registry[window.selectedItem];
+                
+                // Show/hide type selector for NL1I items (not instances)
+                if (item.nestingLevel > 0 && !item.instanceOf) {
+                    typeSelector.style.display = 'flex';
+                    typeSelect.value = item.type;
+                } else {
+                    typeSelector.style.display = 'none';
+                }
+                
+                if (item.instanceOf && window.registry[item.instanceOf]) {
+                    input.value = window.registry[item.instanceOf].title;
+                } else {
+                    input.value = item.title;
+                }
+                
+                document.body.focus();
+            } else {
+                editor.style.display = 'none';
+            }
+        }
+        
+        function updateObjectTree() {
+            if (!window.parsedData) return;
+            
+            const tree = document.getElementById('objectTree');
+            tree.innerHTML = '';
+            
+            const allObjects = [];
+            window.parsedData.objectMap.forEach(column => {
+                column.forEach(obj => allObjects.push(obj));
+            });
+            
+            allObjects.forEach(obj => {
+                const objDiv = document.createElement('div');
+                objDiv.className = 'tree-item';
+                const objSpan = document.createElement('span');
+                objSpan.textContent = obj.title;
+                objDiv.appendChild(objSpan);
+                tree.appendChild(objDiv);
+                
+                obj.children.forEach(child => {
+                    const childDiv = document.createElement('div');
+                    childDiv.className = 'tree-item nested';
+                    
+                    const contentSpan = document.createElement('span');
+                    contentSpan.style.display = 'flex';
+                    contentSpan.style.alignItems = 'center';
+                    
+                    const bullet = document.createElement('span');
+                    bullet.className = `tree-bullet ${child.type}`;
+                    
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = child.title;
+                    
+                    contentSpan.appendChild(bullet);
+                    contentSpan.appendChild(textSpan);
+                    
+                    const button = document.createElement('button');
+                    button.textContent = '+';
+                    button.disabled = !window.selectedItem;
+                    button.onclick = function() {
+                        if (window.selectedItem) {
+                            insertItem(child.type, child.id);
+                        }
+                    };
+                    
+                    childDiv.appendChild(contentSpan);
+                    childDiv.appendChild(button);
+                    tree.appendChild(childDiv);
+                });
+            });
+        }
+        
+        function generateUniqueId(prefix) {
+            return prefix + '_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        function insertItem(type, instanceOf) {
+            const newItem = {
+                id: generateUniqueId(instanceOf ? 'inst' : type),
+                type: type,
+                children: []
+            };
+            
+            if (instanceOf) {
+                newItem.instanceOf = instanceOf;
+            } else {
+                newItem.title = 'New ' + type.charAt(0).toUpperCase() + type.slice(1);
+            }
+            
+            const isL1i = (type === 'object' || type === 'page');
+            
+            if (isL1i) {
+                newItem.nestingLevel = 0;
+                const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+                
+                let targetColumnIndex = 0;
+                if (window.selectedItem && window.registry[window.selectedItem]) {
+                    targetColumnIndex = findItemColumn(window.selectedItem);
+                }
+                
+                while (columns.length <= targetColumnIndex) {
+                    columns.push([]);
+                }
+                
+                columns[targetColumnIndex].push(newItem);
+                
+            } else {
+                if (!window.selectedItem || !window.registry[window.selectedItem]) {
+                    return;
+                }
+                
+                const selected = window.registry[window.selectedItem];
+                
+                if (selected.nestingLevel === 0) {
+                    newItem.nestingLevel = 1;
+                    selected.children.push(newItem);
+                } else {
+                    const parent = findParent(selected);
+                    if (parent) {
+                        const index = parent.children.findIndex(c => c.id === selected.id);
+                        newItem.nestingLevel = selected.nestingLevel;
+                        parent.children.splice(index + 1, 0, newItem);
+                    }
+                }
+            }
+            
+            updateXMLFromData();
+            parseXML();
+            selectItem(newItem.id);
+            
+            // Auto-focus the title input for non-instances
+            if (!instanceOf) {
+                setTimeout(() => {
+                    const titleInput = document.getElementById('titleInput');
+                    if (titleInput) {
+                        titleInput.focus();
+                        titleInput.select();
+                    }
+                }, 100);
+            }
+        }
+        
+        function findItemColumn(itemId) {
+            const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+            
+            for (let i = 0; i < columns.length; i++) {
+                if (findItemInColumn(columns[i], itemId)) {
+                    return i;
+                }
+            }
+            return 0;
+        }
+        
+        function findItemInColumn(items, itemId) {
+            for (let item of items) {
+                if (item.id === itemId) return true;
+                if (findItemInColumn(item.children, itemId)) return true;
+            }
+            return false;
+        }
+        
+        function findItemInMap(columns, itemId) {
+            for (let column of columns) {
+                if (findItemInColumn(column, itemId)) return true;
+            }
+            return false;
+        }
+        
+        function findParent(item) {
+            const searchInItems = (items) => {
+                for (let parent of items) {
+                    if (parent.children.some(c => c.id === item.id)) {
+                        return parent;
+                    }
+                    const found = searchInItems(parent.children);
+                    if (found) return found;
+                }
+                return null;
+            };
+            
+            const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+            for (let column of columns) {
+                const found = searchInItems(column);
+                if (found) return found;
+            }
+            return null;
+        }
+        
+        function updateXMLFromData(fromUI = false) {
+            let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<xml>\n  <Diagram>\n';
+            
+            xml += '    <ObjectMap>\n';
+            window.parsedData.objectMap.forEach(column => {
+                if (column.length > 0) {
+                    xml += '      <Column>\n';
+                    column.forEach(obj => {
+                        xml += itemToXML(obj, 4);
+                    });
+                    xml += '      </Column>\n';
+                }
+            });
+            xml += '    </ObjectMap>\n';
+            
+            xml += '    <SiteMap>\n';
+            window.parsedData.siteMap.forEach(column => {
+                if (column.length > 0) {
+                    xml += '      <Column>\n';
+                    column.forEach(page => {
+                        xml += itemToXML(page, 4);
+                    });
+                    xml += '      </Column>\n';
+                }
+            });
+            xml += '    </SiteMap>\n';
+            
+            xml += '  </Diagram>\n</xml>';
+            
+            if (fromUI) {
+                window.isUpdatingFromUI = true;
+            }
+            
+            document.getElementById('xmlEditor').value = xml;
+            window.xmlContent = xml;
+            // Update the current version's XML
+            window.versions[window.currentVersion] = xml;
+            
+            // Update diff list if visible
+            if (window.activeEditorTab === 'diff') {
+                updateDiffList();
+            }
+        }
+        
+        function itemToXML(item, indent) {
+            const spaces = '  '.repeat(indent);
+            const tagName = item.type.charAt(0).toUpperCase() + item.type.slice(1);
+            
+            let attrs = `id="${item.id}"`;
+            
+            if (!item.instanceOf) {
+                attrs += ` title="${item.title}"`;
+            }
+            
+            if (item.instanceOf) {
+                attrs += ` instanceOf="${item.instanceOf}"`;
+            }
+            
+            if (item.linkTo) {
+                attrs += ` linkTo="${item.linkTo}"`;
+            }
+            
+            if (item.children.length === 0) {
+                return `${spaces}<${tagName} ${attrs}/>\n`;
+            } else {
+                let xml = `${spaces}<${tagName} ${attrs}>\n`;
+                item.children.forEach(child => {
+                    xml += itemToXML(child, indent + 1);
+                });
+                xml += `${spaces}</${tagName}>\n`;
+                return xml;
+            }
+        }
+        
+        function handleTitleChange(e) {
+            if (!window.selectedItem || !window.registry[window.selectedItem]) return;
+            
+            const newTitle = e.target.value;
+            const item = window.registry[window.selectedItem];
+            
+            let itemToUpdate = item;
+            if (item.instanceOf && window.registry[item.instanceOf]) {
+                itemToUpdate = window.registry[item.instanceOf];
+            }
+            
+            itemToUpdate.title = newTitle;
+            updateXMLFromData(true);
+            renderDiagram();
+            updateObjectTree();
+        }
+        
+        function handleTitleKeyDown(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                
+                if (!window.selectedItem || !window.registry[window.selectedItem]) return;
+                
+                const currentItem = window.registry[window.selectedItem];
+                
+                // Don't create new item if it's an instance
+                if (currentItem.instanceOf) return;
+                
+                // Create a new item of the same type
+                const itemType = currentItem.type;
+                
+                saveUndoState();
+                
+                const newItem = {
+                    id: generateUniqueId(itemType),
+                    type: itemType,
+                    title: 'New ' + itemType.charAt(0).toUpperCase() + itemType.slice(1),
+                    children: [],
+                    nestingLevel: currentItem.nestingLevel
+                };
+                
+                // Insert after current item
+                if (currentItem.nestingLevel === 0) {
+                    // L1I - add to same column
+                    const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+                    const colIndex = findItemColumn(currentItem.id);
+                    const itemIndex = columns[colIndex].findIndex(i => i.id === currentItem.id);
+                    columns[colIndex].splice(itemIndex + 1, 0, newItem);
+                } else {
+                    // NL1I - add as sibling
+                    const parent = findParent(currentItem);
+                    if (parent) {
+                        const itemIndex = parent.children.findIndex(c => c.id === currentItem.id);
+                        parent.children.splice(itemIndex + 1, 0, newItem);
+                    }
+                }
+                
+                updateXMLFromData(true);
+                parseXML();
+                selectItem(newItem.id);
+                
+                // Auto-focus and select the new item's title
+                setTimeout(() => {
+                    const titleInput = document.getElementById('titleInput');
+                    if (titleInput) {
+                        titleInput.focus();
+                        titleInput.select();
+                    }
+                }, 100);
+            }
+        }
+        
+        // Linking Functions
+        function startLinkingMode(sourceId) {
+            window.linkingMode = true;
+            window.linkingSource = sourceId;
+            window.selectedItem = sourceId;
+            renderDiagram();
+            renderActionButtons();
+        }
+        
+        function exitLinkingMode() {
+            window.linkingMode = false;
+            window.linkingSource = null;
+            renderDiagram();
+        }
+        
+        function isValidLinkTarget(targetId) {
+            if (!window.linkingSource || targetId === window.linkingSource) return false;
+            
+            const sourceInObjectMap = findItemInMap(window.parsedData.objectMap, window.linkingSource);
+            const sourceInSiteMap = findItemInMap(window.parsedData.siteMap, window.linkingSource);
+            const targetInObjectMap = findItemInMap(window.parsedData.objectMap, targetId);
+            const targetInSiteMap = findItemInMap(window.parsedData.siteMap, targetId);
+            
+            return (sourceInObjectMap && targetInObjectMap) || (sourceInSiteMap && targetInSiteMap);
+        }
+        
+        function createLink(sourceId, targetId) {
+            const source = window.registry[sourceId];
+            if (!source) return;
+            
+            let currentLinks = source.linkTo ? source.linkTo.split(',').map(s => s.trim()) : [];
+            
+            if (!currentLinks.includes(targetId)) {
+                currentLinks.push(targetId);
+                source.linkTo = currentLinks.join(',');
+                
+                updateXMLFromData(true);
+                parseXML();
+                selectItem(sourceId);
+            }
+        }
+        
+        // Arrow Drawing - COMPLETE REWRITE WITH CLEAN ROUTING LOGIC
+        function drawAllArrows() {
+            const diagramBuilder = document.querySelector('.diagram-builder');
+            
+            const existingSvg = diagramBuilder.querySelector('.arrow-svg');
+            if (existingSvg) existingSvg.remove();
+            
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.classList.add('arrow-svg');
+            
+            const canvas = document.getElementById('diagramCanvas');
+            
+            svg.setAttribute('width', diagramBuilder.scrollWidth);
+            svg.setAttribute('height', diagramBuilder.scrollHeight);
+            svg.style.width = diagramBuilder.scrollWidth + 'px';
+            svg.style.height = diagramBuilder.scrollHeight + 'px';
+            
+            diagramBuilder.insertBefore(svg, canvas);
+            
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            
+            // Default arrowhead
+            const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+            marker.setAttribute('id', 'arrowhead');
+            marker.setAttribute('markerWidth', '10');
+            marker.setAttribute('markerHeight', '7');
+            marker.setAttribute('refX', '9');
+            marker.setAttribute('refY', '3.5');
+            marker.setAttribute('orient', 'auto');
+            
+            const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            polygon.setAttribute('points', '0 0, 10 3.5, 0 7');
+            polygon.setAttribute('fill', '#999');
+            marker.appendChild(polygon);
+            defs.appendChild(marker);
+            
+            // Selected arrowhead
+            const markerSelected = marker.cloneNode(true);
+            markerSelected.setAttribute('id', 'arrowhead-selected');
+            markerSelected.querySelector('polygon').setAttribute('fill', '#333');
+            defs.appendChild(markerSelected);
+            
+            // Added arrow markers (green)
+            const markerAdded = marker.cloneNode(true);
+            markerAdded.setAttribute('id', 'arrowhead-added');
+            markerAdded.querySelector('polygon').setAttribute('fill', '#4CAF50');
+            defs.appendChild(markerAdded);
+            
+            const markerAddedSelected = marker.cloneNode(true);
+            markerAddedSelected.setAttribute('id', 'arrowhead-added-selected');
+            markerAddedSelected.querySelector('polygon').setAttribute('fill', '#4CAF50');
+            defs.appendChild(markerAddedSelected);
+            
+            // Removed arrow markers (red)
+            const markerRemoved = marker.cloneNode(true);
+            markerRemoved.setAttribute('id', 'arrowhead-removed');
+            markerRemoved.querySelector('polygon').setAttribute('fill', '#F44336');
+            defs.appendChild(markerRemoved);
+            
+            const markerRemovedSelected = marker.cloneNode(true);
+            markerRemovedSelected.setAttribute('id', 'arrowhead-removed-selected');
+            markerRemovedSelected.querySelector('polygon').setAttribute('fill', '#F44336');
+            defs.appendChild(markerRemovedSelected);
+            
+            svg.appendChild(defs);
+            
+            const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+            
+            columns.forEach(column => {
+                drawArrowsForItems(column, svg);
+            });
+        }
+        
+        function drawArrowsForItems(items, svg) {
+            items.forEach(item => {
+                if (item.linkTo) {
+                    const targets = item.linkTo.split(',').map(s => s.trim());
+                    targets.forEach(targetId => {
+                        if (window.registry[targetId]) {
+                            drawArrow(svg, item.id, targetId);
+                        }
+                    });
+                }
+                if (item.children.length > 0) {
+                    drawArrowsForItems(item.children, svg);
+                }
+            });
+        }
+        
+        // Helper function to get the vertical lane X position
+        function getVerticalLaneX(fromColumn, toColumn, columns, svgRect) {
+            // If we need lane between two columns
+            if (fromColumn !== toColumn) {
+                const leftColIndex = Math.min(fromColumn, toColumn);
+                const rightColIndex = leftColIndex + 1;
+                
+                if (columns[leftColIndex] && columns[rightColIndex]) {
+                    const leftRect = columns[leftColIndex].getBoundingClientRect();
+                    const rightRect = columns[rightColIndex].getBoundingClientRect();
+                    return ((leftRect.right + rightRect.left) / 2) - svgRect.left;
+                }
+            }
+            
+            // For same column or edge cases, return a sensible default
+            if (columns[fromColumn]) {
+                const colRect = columns[fromColumn].getBoundingClientRect();
+                return colRect.right - svgRect.left + 25; // Default offset to the right
+            }
+            
+            return 100; // Fallback
+        }
+        
+        // Helper function to get the left lane for a column
+        function getLeftLaneX(columnIndex, columns, svgRect) {
+            if (columnIndex === 0) {
+                // Fixed distance to the left of first column
+                return 40; // Fixed left margin
+            } else {
+                // Midpoint between this column and the one to its left
+                const leftCol = columns[columnIndex - 1];
+                const thisCol = columns[columnIndex];
+                if (leftCol && thisCol) {
+                    const leftRect = leftCol.getBoundingClientRect();
+                    const thisRect = thisCol.getBoundingClientRect();
+                    return ((leftRect.right + thisRect.left) / 2) - svgRect.left;
+                }
+            }
+            return 40; // Fallback
+        }
+        
+        // Helper to calculate max height of columns in a range
+        function getMaxColumnHeight(startCol, endCol, columns, svgRect) {
+            let maxHeight = 0;
+            for (let i = startCol; i <= endCol; i++) {
+                if (columns[i]) {
+                    const items = columns[i].querySelectorAll('.diagram-item');
+                    items.forEach(item => {
+                        const rect = item.getBoundingClientRect();
+                        maxHeight = Math.max(maxHeight, rect.bottom - svgRect.top);
+                    });
+                }
+            }
+            return maxHeight;
+        }
+        
+        function getArrowDiffStatus(sourceId, targetId) {
+            // Only show diff if Diff List or Thread tab is active
+            const showDiff = window.activeEditorTab === 'diff' || window.activeEditorTab === 'thread';
+            if (!showDiff) return null;
+            
+            // Check if this arrow is added or removed based on version comparison
+            if (window.currentVersion === 1) {
+                // In V1, check if arrow exists in V2 (if not, it's removed)
+                const v2Data = parseVersionData(window.versions[2]);
+                if (!v2Data) return null;
+                
+                const v2Source = v2Data.registry[sourceId];
+                if (!v2Source) return null; // Source doesn't exist in V2
+                
+                const v2Links = v2Source.linkTo ? v2Source.linkTo.split(',').map(s => s.trim()) : [];
+                if (!v2Links.includes(targetId)) {
+                    return 'removed'; // This arrow will be removed in V2
+                }
+            } else if (window.currentVersion === 2) {
+                // In V2, check if arrow existed in V1 (if not, it's added)
+                const v1Data = parseVersionData(window.versions[1]);
+                if (!v1Data) return null;
+                
+                const v1Source = v1Data.registry[sourceId];
+                if (!v1Source) {
+                    return 'added'; // Source is new, so arrow is added
+                }
+                
+                const v1Links = v1Source.linkTo ? v1Source.linkTo.split(',').map(s => s.trim()) : [];
+                if (!v1Links.includes(targetId)) {
+                    return 'added'; // This arrow is new in V2
+                }
+            }
+            
+            return null; // No diff status
+        }
+        
+        function drawArrow(svg, sourceId, targetId) {
+            const sourceEl = document.querySelector(`[data-item-id="${sourceId}"]`);
+            const targetEl = document.querySelector(`[data-item-id="${targetId}"]`);
+            
+            if (!sourceEl || !targetEl) return;
+            
+            const sourceRect = sourceEl.getBoundingClientRect();
+            const targetRect = targetEl.getBoundingClientRect();
+            const svgRect = svg.getBoundingClientRect();
+            
+            const sourceX = sourceRect.right - svgRect.left;
+            const sourceY = sourceRect.top + sourceRect.height / 2 - svgRect.top;
+            const targetX = targetRect.left - svgRect.left;
+            const targetY = targetRect.top + targetRect.height / 2 - svgRect.top;
+            
+            const sourceColumn = parseInt(sourceEl.closest('.diagram-column').dataset.columnIndex);
+            const targetColumn = parseInt(targetEl.closest('.diagram-column').dataset.columnIndex);
+            
+            const columns = document.querySelectorAll('.diagram-column');
+            const radius = 12;
+            const offset = 25;
+            
+            let pathData = '';
+            
+            // STEP A: Always start by going right to find the first middle lane
+            const firstLaneX = getVerticalLaneX(sourceColumn, sourceColumn + 1, columns, svgRect);
+            
+            // Determine routing based on destination
+            if (targetColumn === sourceColumn + 1) {
+                // STEP B: Adjacent column to the right - check if we can go direct
+                if (targetY === sourceY) {
+                    // Same height - straight line
+                    pathData = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
+                } else if (targetY < sourceY) {
+                    // Target is above - go up in the lane
+                    pathData = `M ${sourceX} ${sourceY}
+                            L ${firstLaneX - radius} ${sourceY}
+                            Q ${firstLaneX} ${sourceY} ${firstLaneX} ${sourceY - radius}
+                            L ${firstLaneX} ${targetY + radius}
+                            Q ${firstLaneX} ${targetY} ${firstLaneX + radius} ${targetY}
+                            L ${targetX} ${targetY}`;
+                } else {
+                    // Target is below - go down in the lane
+                    pathData = `M ${sourceX} ${sourceY}
+                            L ${firstLaneX - radius} ${sourceY}
+                            Q ${firstLaneX} ${sourceY} ${firstLaneX} ${sourceY + radius}
+                            L ${firstLaneX} ${targetY - radius}
+                            Q ${firstLaneX} ${targetY} ${firstLaneX + radius} ${targetY}
+                            L ${targetX} ${targetY}`;
+                }
+            } else if (targetColumn > sourceColumn + 1) {
+                // STEP A-R: Going right to non-adjacent column
+                // Calculate max height excluding source column AND destination column
+                const maxHeight = getMaxColumnHeight(sourceColumn + 1, targetColumn - 1, columns, svgRect);
+                const routeY = maxHeight + offset * 2;
+                
+                // Find the lane to the left of target column
+                const targetLaneX = getLeftLaneX(targetColumn, columns, svgRect);
+                
+                // Check if we need to go up or down to reach target
+                if (targetY < sourceY) {
+                    // Target is above - go right then up
+                    pathData = `M ${sourceX} ${sourceY}
+                            L ${targetLaneX - radius} ${sourceY}
+                            Q ${targetLaneX} ${sourceY} ${targetLaneX} ${sourceY - radius}
+                            L ${targetLaneX} ${targetY + radius}
+                            Q ${targetLaneX} ${targetY} ${targetLaneX + radius} ${targetY}
+                            L ${targetX} ${targetY}`;
+                } else if (Math.abs(targetY - sourceY) < 5) {
+                    // Same height - straight line
+                    pathData = `M ${sourceX} ${sourceY}
+                            L ${targetX} ${targetY}`;
+                } else {
+                    // Target is below or we need to route under columns
+                    pathData = `M ${sourceX} ${sourceY}
+                            L ${firstLaneX - radius} ${sourceY}
+                            Q ${firstLaneX} ${sourceY} ${firstLaneX} ${sourceY + radius}
+                            L ${firstLaneX} ${routeY - radius}
+                            Q ${firstLaneX} ${routeY} ${firstLaneX + radius} ${routeY}
+                            L ${targetLaneX - radius} ${routeY}
+                            Q ${targetLaneX} ${routeY} ${targetLaneX} ${routeY - radius}
+                            L ${targetLaneX} ${targetY + radius}
+                            Q ${targetLaneX} ${targetY} ${targetLaneX + radius} ${targetY}
+                            L ${targetX} ${targetY}`;
+                }
+            } else {
+                // STEP A-L: Going left or same column
+                // Calculate max height including source column
+                const minCol = Math.min(sourceColumn, targetColumn);
+                const maxCol = Math.max(sourceColumn, targetColumn);
+                const maxHeight = getMaxColumnHeight(minCol, maxCol, columns, svgRect);
+                const routeY = maxHeight + offset * 2;
+                
+                // Find the lane to the left of target column
+                const targetLaneX = getLeftLaneX(targetColumn, columns, svgRect);
+                
+                pathData = `M ${sourceX} ${sourceY}
+                        L ${firstLaneX - radius} ${sourceY}
+                        Q ${firstLaneX} ${sourceY} ${firstLaneX} ${sourceY + radius}
+                        L ${firstLaneX} ${routeY - radius}
+                        Q ${firstLaneX} ${routeY} ${firstLaneX - radius} ${routeY}
+                        L ${targetLaneX + radius} ${routeY}
+                        Q ${targetLaneX} ${routeY} ${targetLaneX} ${routeY - radius}
+                        L ${targetLaneX} ${targetY + radius}
+                        Q ${targetLaneX} ${targetY} ${targetLaneX + radius} ${targetY}
+                        L ${targetX} ${targetY}`;
+            }
+            
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', pathData);
+            path.dataset.sourceId = sourceId;
+            path.dataset.targetId = targetId;
+            
+            // Determine arrow diff status
+            const arrowDiffStatus = getArrowDiffStatus(sourceId, targetId);
+            const isSelected = window.selectedItem === sourceId || window.selectedItem === targetId;
+            const isHighlighted = window.highlightedDiffItem === sourceId || window.highlightedDiffItem === targetId;
+            
+            // Apply styling based on diff status, selection, and highlighting
+            if (arrowDiffStatus === 'added') {
+                // Green for added
+                path.setAttribute('stroke', '#4CAF50');
+                if (isHighlighted) {
+                    path.setAttribute('stroke-width', '3');
+                    path.setAttribute('stroke-dasharray', 'none');
+                } else {
+                    path.setAttribute('stroke-width', isSelected ? '2' : '1');
+                    path.setAttribute('stroke-dasharray', isSelected ? 'none' : '5,5');
+                }
+                path.setAttribute('fill', 'none');
+                path.setAttribute('marker-end', isSelected || isHighlighted ? 'url(#arrowhead-added-selected)' : 'url(#arrowhead-added)');
+            } else if (arrowDiffStatus === 'removed') {
+                // Red for removed
+                path.setAttribute('stroke', '#F44336');
+                if (isHighlighted) {
+                    path.setAttribute('stroke-width', '3');
+                    path.setAttribute('stroke-dasharray', 'none');
+                } else {
+                    path.setAttribute('stroke-width', isSelected ? '2' : '1');
+                    path.setAttribute('stroke-dasharray', isSelected ? 'none' : '5,5');
+                }
+                path.setAttribute('fill', 'none');
+                path.setAttribute('marker-end', isSelected || isHighlighted ? 'url(#arrowhead-removed-selected)' : 'url(#arrowhead-removed)');
+            } else if (isHighlighted) {
+                // Highlighted but no diff status
+                path.setAttribute('stroke', '#333');
+                path.setAttribute('stroke-width', '3');
+                path.setAttribute('fill', 'none');
+                path.setAttribute('marker-end', 'url(#arrowhead-selected)');
+            } else if (isSelected) {
+                // No diff, but selected
+                path.setAttribute('stroke', '#333');
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('fill', 'none');
+                path.setAttribute('marker-end', 'url(#arrowhead-selected)');
+            } else {
+                // Default style
+                path.setAttribute('stroke', '#ccc');
+                path.setAttribute('stroke-width', '1');
+                path.setAttribute('stroke-dasharray', '5,5');
+                path.setAttribute('fill', 'none');
+                path.setAttribute('marker-end', 'url(#arrowhead)');
+            }
+            
+            svg.appendChild(path);
+        }
+        
+        // FIXED: Diff Detection Functions - Properly handle instances
+        function getItemDiffStatus(itemId) {
+            // Only show diff if Diff List or Thread tab is active
+            const showDiff = window.activeEditorTab === 'diff' || window.activeEditorTab === 'thread';
+            if (!showDiff) return null;
+            
+            if (window.currentVersion === 1) {
+                const v2Data = parseVersionData(window.versions[2]);
+                if (!findItemById(itemId, v2Data)) {
+                    return { type: 'removed' };
+                }
+                const v1Item = window.registry[itemId];
+                const v2Item = findItemById(itemId, v2Data);
+                if (v1Item && v2Item) {
+                    // Special handling for instances
+                    if (v1Item.instanceOf || v2Item.instanceOf) {
+                        // Check if instanceOf reference changed
+                        if (v1Item.instanceOf !== v2Item.instanceOf) {
+                            return { type: 'modified' };
+                        }
+                        // Check if linkTo changed for the instance itself
+                        if (v1Item.linkTo !== v2Item.linkTo) {
+                            return { type: 'modified' };
+                        }
+                        // Check moves for instances (NL1I only)
+                        if (v1Item.nestingLevel > 0) {
+                            if (getItemPath(v1Item, window.parsedData) !== getItemPath(v2Item, v2Data)) {
+                                return { type: 'moved' };
+                            }
+                        }
+                        // Don't check title changes for instances - that's handled by the original
+                    } else {
+                        // For non-instances, check title and linkTo changes
+                        if (v1Item.title !== v2Item.title || v1Item.linkTo !== v2Item.linkTo) {
+                            return { type: 'modified' };
+                        }
+                        // Check moves for non-L1I items
+                        if (v1Item.nestingLevel > 0) {
+                            if (getItemPath(v1Item, window.parsedData) !== getItemPath(v2Item, v2Data)) {
+                                return { type: 'moved' };
+                            }
+                        }
+                    }
+                }
+            } else if (window.currentVersion === 2) {
+                const v1Data = parseVersionData(window.versions[1]);
+                if (!findItemById(itemId, v1Data)) {
+                    return { type: 'added' };
+                }
+                const v1Item = findItemById(itemId, v1Data);
+                const v2Item = window.registry[itemId];
+                if (v1Item && v2Item) {
+                    // Special handling for instances
+                    if (v1Item.instanceOf || v2Item.instanceOf) {
+                        // Check if instanceOf reference changed
+                        if (v1Item.instanceOf !== v2Item.instanceOf) {
+                            return { type: 'modified' };
+                        }
+                        // Check if linkTo changed for the instance itself
+                        if (v1Item.linkTo !== v2Item.linkTo) {
+                            return { type: 'modified' };
+                        }
+                        // Check moves for instances (NL1I only)
+                        if (v2Item.nestingLevel > 0) {
+                            if (getItemPath(v1Item, v1Data) !== getItemPath(v2Item, window.parsedData)) {
+                                return { type: 'moved' };
+                            }
+                        }
+                        // Don't check title changes for instances
+                    } else {
+                        // For non-instances, check title and linkTo changes
+                        if (v1Item.title !== v2Item.title || v1Item.linkTo !== v2Item.linkTo) {
+                            return { type: 'modified' };
+                        }
+                        // Check moves for non-L1I items
+                        if (v2Item.nestingLevel > 0) {
+                            if (getItemPath(v1Item, v1Data) !== getItemPath(v2Item, window.parsedData)) {
+                                return { type: 'moved' };
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+        
+        function getItemDisplayTitle(item, data) {
+            if (item.instanceOf && data.registry && data.registry[item.instanceOf]) {
+                return data.registry[item.instanceOf].title;
+            }
+            return item.title;
+        }
+        
+        function parseVersionData(xmlString) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+                const diagram = xmlDoc.querySelector("Diagram");
+                if (!diagram) return null;
+                
+                const tempRegistry = {};
+                const data = {
+                    objectMap: parseColumnsForVersion(diagram.querySelector("ObjectMap"), 'Object', tempRegistry),
+                    siteMap: parseColumnsForVersion(diagram.querySelector("SiteMap"), 'Page', tempRegistry),
+                    registry: tempRegistry
+                };
+                return data;
+            } catch (e) {
+                return null;
+            }
+        }
+        
+        function parseColumnsForVersion(mapElement, itemTagName, tempRegistry) {
+            if (!mapElement) return [];
+            const columns = [];
+            
+            for (let columnEl of mapElement.querySelectorAll(':scope > Column')) {
+                const columnItems = [];
+                
+                for (let itemEl of columnEl.children) {
+                    if (itemEl.tagName === itemTagName || itemEl.tagName === 'Page') {
+                        const item = parseItemForVersion(itemEl, 0, tempRegistry);
+                        item.columnIndex = columns.length;
+                        columnItems.push(item);
+                    }
+                }
+                
+                columns.push(columnItems);
+            }
+            
+            return columns;
+        }
+        
+        function parseItemForVersion(element, nestingLevel, tempRegistry) {
+            const id = element.getAttribute('id');
+            const item = {
+                id: id,
+                type: element.tagName.toLowerCase(),
+                title: element.getAttribute('title') || '',
+                nestingLevel: nestingLevel,
+                instanceOf: element.getAttribute('instanceOf'),
+                linkTo: element.getAttribute('linkTo'),
+                children: []
+            };
+            
+            if (id) tempRegistry[id] = item;
+            
+            for (let child of element.children) {
+                if (['Info', 'Function', 'Case'].includes(child.tagName)) {
+                    item.children.push(parseItemForVersion(child, nestingLevel + 1, tempRegistry));
+                }
+            }
+            
+            return item;
+        }
+        
+        function findItemById(id, data) {
+            if (!data || !data.registry) return null;
+            return data.registry[id];
+        }
+        
+        function getItemPath(item, data) {
+            const path = [];
+            let current = item;
+            
+            while (current) {
+                path.unshift(current.title || current.id);
+                current = findParentInData(current, data);
+            }
+            
+            return path.join('/');
+        }
+        
+        function findParentInData(item, data) {
+            const searchInItems = (items) => {
+                for (let parent of items) {
+                    if (parent.children && parent.children.some(c => c.id === item.id)) {
+                        return parent;
+                    }
+                    const found = searchInItems(parent.children || []);
+                    if (found) return found;
+                }
+                return null;
+            };
+            
+            const allColumns = [...(data.objectMap || []), ...(data.siteMap || [])];
+            for (let column of allColumns) {
+                const found = searchInItems(column);
+                if (found) return found;
+            }
+            return null;
+        }
+        
+        function findItemColumnInData(itemId, data) {
+            const columns = [...(data.objectMap || []), ...(data.siteMap || [])];
+            for (let i = 0; i < columns.length; i++) {
+                if (findItemInColumn(columns[i], itemId)) {
+                    return i;
+                }
+            }
+            return 0;
+        }
+        
+        function updateDiffList() {
+            const v1Data = parseVersionData(window.versions[1]);
+            const v2Data = parseVersionData(window.versions[2]);
+            
+            if (!v1Data || !v2Data) return;
+            
+            const changes = detectChanges(v1Data, v2Data);
+            renderDiffList(changes);
+        }
+        
+        function detectChanges(v1Data, v2Data) {
+            const changes = [];
+            const processedMoves = new Set();
+            
+            // Check all items in v1
+            for (let id in v1Data.registry) {
+                const v1Item = v1Data.registry[id];
+                const v2Item = v2Data.registry[id];
+                
+                if (!v2Item) {
+                    // Item was removed
+                    changes.push({
+                        type: 'removed',
+                        itemId: id,
+                        item: v1Item,
+                        data: v1Data,
+                        groupId: v1Item.instanceOf || null
+                    });
+                    
+                    // If the removed item had linkTo, add separate link-removed changes
+                    if (v1Item.linkTo) {
+                        const links = v1Item.linkTo.split(',').map(s => s.trim());
+                        links.forEach(targetId => {
+                            changes.push({
+                                type: 'link-removed',
+                                itemId: id,
+                                item: v1Item,
+                                targetId: targetId,
+                                data: v1Data
+                            });
+                        });
+                    }
+                } else {
+                    // Skip L1I movements
+                    if (v1Item.nestingLevel === 0) continue;
+                    
+                    // FIXED: Check modifications differently for instances vs non-instances
+                    if (v1Item.instanceOf || v2Item.instanceOf) {
+                        // For instances, only check instanceOf and linkTo changes
+                        if (v1Item.instanceOf !== v2Item.instanceOf) {
+                            changes.push({
+                                type: 'modified',
+                                subtype: 'instanceOf',
+                                itemId: id,
+                                item: v1Item,
+                                newItem: v2Item,
+                                oldValue: v1Item.instanceOf,
+                                newValue: v2Item.instanceOf,
+                                data: v1Data
+                            });
+                        }
+                        
+                        // Check linkTo changes for instances
+                        if (v1Item.linkTo !== v2Item.linkTo) {
+                            const v1Links = v1Item.linkTo ? v1Item.linkTo.split(',').map(s => s.trim()) : [];
+                            const v2Links = v2Item.linkTo ? v2Item.linkTo.split(',').map(s => s.trim()) : [];
+                            
+                            // Find added links
+                            v2Links.forEach(link => {
+                                if (!v1Links.includes(link)) {
+                                    changes.push({
+                                        type: 'link-added',
+                                        itemId: id,
+                                        item: v2Item,
+                                        targetId: link,
+                                        data: v2Data
+                                    });
+                                }
+                            });
+                            
+                            // Find removed links
+                            v1Links.forEach(link => {
+                                if (!v2Links.includes(link)) {
+                                    changes.push({
+                                        type: 'link-removed',
+                                        itemId: id,
+                                        item: v1Item,
+                                        targetId: link,
+                                        data: v1Data
+                                    });
+                                }
+                            });
+                        }
+                    } else {
+                        // For non-instances, check title changes
+                        if (v1Item.title !== v2Item.title) {
+                            changes.push({
+                                type: 'modified',
+                                subtype: 'title',
+                                itemId: id,
+                                item: v1Item,
+                                newItem: v2Item,
+                                oldValue: v1Item.title,
+                                newValue: v2Item.title,
+                                data: v1Data
+                            });
+                        }
+                        
+                        // Check linkTo changes
+                        if (v1Item.linkTo !== v2Item.linkTo) {
+                            const v1Links = v1Item.linkTo ? v1Item.linkTo.split(',').map(s => s.trim()) : [];
+                            const v2Links = v2Item.linkTo ? v2Item.linkTo.split(',').map(s => s.trim()) : [];
+                            
+                            // Find added links
+                            v2Links.forEach(link => {
+                                if (!v1Links.includes(link)) {
+                                    changes.push({
+                                        type: 'link-added',
+                                        itemId: id,
+                                        item: v2Item,
+                                        targetId: link,
+                                        data: v2Data
+                                    });
+                                }
+                            });
+                            
+                            // Find removed links
+                            v1Links.forEach(link => {
+                                if (!v2Links.includes(link)) {
+                                    changes.push({
+                                        type: 'link-removed',
+                                        itemId: id,
+                                        item: v1Item,
+                                        targetId: link,
+                                        data: v1Data
+                                    });
+                                }
+                            });
+                        }
+                    }
+                    
+                    // Check for moves (only for NL1I)
+                    if (v1Item.nestingLevel > 0 && !processedMoves.has(id)) {
+                        const v1Parent = findParentInData(v1Item, v1Data);
+                        const v2Parent = findParentInData(v2Item, v2Data);
+                        
+                        if (v1Parent?.id !== v2Parent?.id) {
+                            // Check if this is part of a parent move
+                            const moveGroup = [];
+                            collectMovedItems(v1Item, v2Data, v1Data, moveGroup, processedMoves);
+                            
+                            moveGroup.forEach(movedItem => {
+                                changes.push({
+                                    type: 'moved',
+                                    itemId: movedItem.id,
+                                    item: movedItem.item,
+                                    fromData: v1Data,
+                                    toData: v2Data,
+                                    groupId: moveGroup.length > 1 ? v1Item.id : null
+                                });
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // Check for added items in v2
+            for (let id in v2Data.registry) {
+                if (!v1Data.registry[id]) {
+                    const v2Item = v2Data.registry[id];
+                    
+                    // Add the item itself
+                    changes.push({
+                        type: 'added',
+                        itemId: id,
+                        item: v2Item,
+                        data: v2Data,
+                        groupId: v2Item.instanceOf || null
+                    });
+                    
+                    // If the new item has linkTo, add separate link-added changes
+                    if (v2Item.linkTo) {
+                        const links = v2Item.linkTo.split(',').map(s => s.trim());
+                        links.forEach(targetId => {
+                            changes.push({
+                                type: 'link-added',
+                                itemId: id,
+                                item: v2Item,
+                                targetId: targetId,
+                                data: v2Data
+                            });
+                        });
+                    }
+                }
+            }
+            
+            return changes;
+        }
+        
+        function collectMovedItems(item, v2Data, v1Data, moveGroup, processed) {
+            if (processed.has(item.id)) return;
+            
+            processed.add(item.id);
+            moveGroup.push({ id: item.id, item: item });
+            
+            // Collect all children that moved with parent
+            item.children.forEach(child => {
+                const v2Child = v2Data.registry[child.id];
+                if (v2Child) {
+                    collectMovedItems(child, v2Data, v1Data, moveGroup, processed);
+                }
+            });
+        }
+        
+        function buildPathString(item, data) {
+            const path = [];
+            let current = item;
+            
+            while (current) {
+                const type = current.type.toUpperCase();
+                const displayTitle = getItemDisplayTitle(current, data);
+                const isInstance = !!current.instanceOf;
+                const title = displayTitle + (isInstance ? ' ●' : '');
+                
+                path.unshift({ type, title, isLast: path.length === 0 });
+                current = findParentInData(current, data);
+            }
+            
+            return path;
+        }
+        
+        function renderDiffList(changes) {
+            const diffList = document.getElementById('diffList');
+            
+            if (changes.length === 0) {
+                diffList.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">No changes detected</div>';
+                return;
+            }
+            
+            diffList.innerHTML = '';
+            
+            // Group changes by groupId
+            const groups = {};
+            const ungrouped = [];
+            
+            changes.forEach(change => {
+                if (change.groupId) {
+                    if (!groups[change.groupId]) groups[change.groupId] = [];
+                    groups[change.groupId].push(change);
+                } else {
+                    ungrouped.push(change);
+                }
+            });
+            
+            // Render ungrouped changes
+            ungrouped.forEach(change => {
+                renderDiffItem(change, diffList, false);
+            });
+            
+            // Render grouped changes
+            Object.values(groups).forEach(group => {
+                group.forEach((change, index) => {
+                    const isFirst = index === 0;
+                    const isLast = index === group.length - 1;
+                    renderDiffItem(change, diffList, true, isFirst, isLast);
+                });
+            });
+        }
+        
+        function renderDiffItem(change, container, grouped, isFirst, isLast) {
+            const diffItem = document.createElement('div');
+            diffItem.className = 'diff-item';
+            if (grouped) {
+                diffItem.classList.add('grouped');
+                if (isFirst) diffItem.classList.add('first');
+                if (isLast) diffItem.classList.add('last');
+            }
+            diffItem.dataset.itemId = change.itemId;
+            
+            const icon = document.createElement('span');
+            icon.className = `diff-icon ${change.type}`;
+            
+            const description = document.createElement('div');
+            description.className = 'diff-description';
+            description.style.flex = '1';
+            
+            let iconText = '';
+            let descriptionHTML = '';
+            
+            if (change.type === 'added') {
+                iconText = '+';
+                const path = buildPathString(change.item, change.data);
+                descriptionHTML = 'Added ' + formatPath(path);
+            } else if (change.type === 'removed') {
+                iconText = '-';
+                const path = buildPathString(change.item, change.data);
+                descriptionHTML = 'Removed ' + formatPath(path);
+            } else if (change.type === 'modified' && change.subtype === 'title') {
+                iconText = '↵';
+                const path = buildPathString(change.item, change.data);
+                descriptionHTML = formatPath(path) + '<br>Renamed to <strong>' + change.newValue + '</strong>';
+            } else if (change.type === 'link-added') {
+                iconText = '+';
+                const path = buildPathString(change.item, change.data);
+                const targetItem = change.data.registry[change.targetId];
+                const targetPath = targetItem ? buildPathString(targetItem, change.data) : null;
+                descriptionHTML = formatPath(path) + '<br>Linked to ' + (targetPath ? formatPath(targetPath) : change.targetId);
+            } else if (change.type === 'link-removed') {
+                iconText = '-';
+                const path = buildPathString(change.item, change.data);
+                const targetItem = change.data.registry[change.targetId];
+                const targetPath = targetItem ? buildPathString(targetItem, change.data) : null;
+                descriptionHTML = formatPath(path) + '<br>Unlinked from ' + (targetPath ? formatPath(targetPath) : change.targetId);
+            } else if (change.type === 'moved') {
+                iconText = '↔';
+                const fromPath = buildPathString(change.item, change.fromData);
+                const toParent = findParentInData(change.toData.registry[change.itemId], change.toData);
+                const toPath = toParent ? buildPathString(toParent, change.toData) : [];
+                
+                descriptionHTML = formatPath(fromPath) + '<br>Moved to ' + formatPath(toPath);
+            }
+            
+            icon.textContent = iconText;
+            description.innerHTML = descriptionHTML;
+            
+            const jiraBtn = document.createElement('button');
+            jiraBtn.className = 'diff-jira-btn';
+            jiraBtn.textContent = 'Push to Jira';
+            
+            diffItem.appendChild(icon);
+            diffItem.appendChild(description);
+            diffItem.appendChild(jiraBtn);
+            
+            // Add hover effect
+            diffItem.addEventListener('mouseenter', () => {
+                highlightDiagramItem(change.itemId);
+            });
+            
+            diffItem.addEventListener('mouseleave', () => {
+                unhighlightDiagramItems();
+            });
+            
+            container.appendChild(diffItem);
+        }
+        
+        function formatPath(pathArray) {
+            if (!pathArray || pathArray.length === 0) return '';
+            
+            return pathArray.map((segment, index) => {
+                const isLast = index === pathArray.length - 1;
+                const dotHTML = `<span class="diff-type-dot ${segment.type.toLowerCase()}"></span>`;
+                const titleHTML = isLast ? `<strong>${segment.title}</strong>` : segment.title;
+                
+                return dotHTML + titleHTML;
+            }).join(' > ');
+        }
+        
+        function highlightDiagramItem(itemId) {
+            unhighlightDiagramItems();
+            window.highlightedDiffItem = itemId;
+            
+            const items = document.querySelectorAll(`[data-item-id="${itemId}"]`);
+            items.forEach(item => {
+                item.classList.add('diff-highlight');
+            });
+            
+            // Redraw arrows to update their highlight state
+            drawAllArrows();
+        }
+        
+        function unhighlightDiagramItems() {
+            window.highlightedDiffItem = null;
+            const highlighted = document.querySelectorAll('.diff-highlight');
+            highlighted.forEach(item => {
+                item.classList.remove('diff-highlight');
+            });
+            
+            // Redraw arrows to remove highlight state
+            drawAllArrows();
+        }
+        function moveItemUp() {
+            if (!window.selectedItem || !window.registry[window.selectedItem]) return false;
+            
+            saveUndoState();
+            
+            const item = window.registry[window.selectedItem];
+            const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+            
+            if (item.nestingLevel === 0) {
+                const colIndex = findItemColumn(item.id);
+                const column = columns[colIndex];
+                const itemIndex = column.findIndex(i => i.id === item.id);
+                
+                if (itemIndex > 0) {
+                    [column[itemIndex], column[itemIndex - 1]] = [column[itemIndex - 1], column[itemIndex]];
+                    return true;
+                }
+            } else {
+                const parent = findParent(item);
+                if (!parent) return false;
+                
+                const itemIndex = parent.children.findIndex(c => c.id === item.id);
+                
+                if (itemIndex > 0) {
+                    [parent.children[itemIndex], parent.children[itemIndex - 1]] = 
+                        [parent.children[itemIndex - 1], parent.children[itemIndex]];
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        function moveItemDown() {
+            if (!window.selectedItem || !window.registry[window.selectedItem]) return false;
+            
+            saveUndoState();
+            
+            const item = window.registry[window.selectedItem];
+            const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+            
+            if (item.nestingLevel === 0) {
+                const colIndex = findItemColumn(item.id);
+                const column = columns[colIndex];
+                const itemIndex = column.findIndex(i => i.id === item.id);
+                
+                if (itemIndex < column.length - 1) {
+                    [column[itemIndex], column[itemIndex + 1]] = [column[itemIndex + 1], column[itemIndex]];
+                    return true;
+                }
+            } else {
+                const parent = findParent(item);
+                if (!parent) return false;
+                
+                const itemIndex = parent.children.findIndex(c => c.id === item.id);
+                
+                if (itemIndex < parent.children.length - 1) {
+                    [parent.children[itemIndex], parent.children[itemIndex + 1]] = 
+                        [parent.children[itemIndex + 1], parent.children[itemIndex]];
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        function moveItemLeft() {
+            if (!window.selectedItem || !window.registry[window.selectedItem]) return false;
+            
+            saveUndoState();
+            
+            const item = window.registry[window.selectedItem];
+            const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+            
+            if (item.nestingLevel === 0) {
+                const currentColIndex = findItemColumn(item.id);
+                if (currentColIndex > 0) {
+                    const currentColumn = columns[currentColIndex];
+                    const targetColumn = columns[currentColIndex - 1];
+                    
+                    const itemIndex = currentColumn.findIndex(i => i.id === item.id);
+                    const [movedItem] = currentColumn.splice(itemIndex, 1);
+                    
+                    targetColumn.push(movedItem);
+                    
+                    cleanupEmptyColumns();
+                    return true;
+                }
+            } else {
+                const parent = findParent(item);
+                if (!parent) return false;
+                
+                if (parent.nestingLevel === 0) return false;
+                
+                const grandparent = findParent(parent);
+                if (!grandparent) return false;
+                
+                const itemIndex = parent.children.findIndex(c => c.id === item.id);
+                const [movedItem] = parent.children.splice(itemIndex, 1);
+                
+                const parentIndex = grandparent.children.findIndex(c => c.id === parent.id);
+                
+                grandparent.children.splice(parentIndex + 1, 0, movedItem);
+                
+                updateNestingLevels(movedItem, parent.nestingLevel);
+                
+                return true;
+            }
+            return false;
+        }
+        
+        function moveItemRight() {
+            if (!window.selectedItem || !window.registry[window.selectedItem]) return false;
+            
+            saveUndoState();
+            
+            const item = window.registry[window.selectedItem];
+            const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+            
+            if (item.nestingLevel === 0) {
+                const currentColIndex = findItemColumn(item.id);
+                const currentColumn = columns[currentColIndex];
+                
+                if (currentColIndex === columns.length - 1) {
+                    columns.push([]);
+                }
+                
+                const targetColumn = columns[currentColIndex + 1];
+                
+                const itemIndex = currentColumn.findIndex(i => i.id === item.id);
+                const [movedItem] = currentColumn.splice(itemIndex, 1);
+                
+                targetColumn.push(movedItem);
+                
+                cleanupEmptyColumns();
+                return true;
+            } else {
+                const parent = findParent(item);
+                if (!parent) return false;
+                
+                const itemIndex = parent.children.findIndex(c => c.id === item.id);
+                
+                if (itemIndex === 0) return false;
+                
+                const newParent = parent.children[itemIndex - 1];
+                
+                const [movedItem] = parent.children.splice(itemIndex, 1);
+                
+                newParent.children.push(movedItem);
+                
+                updateNestingLevels(movedItem, newParent.nestingLevel + 1);
+                
+                return true;
+            }
+            return false;
+        }
+        
+        function updateNestingLevels(item, newLevel) {
+            const oldLevel = item.nestingLevel;
+            const levelDiff = newLevel - oldLevel;
+            
+            function updateRecursive(node) {
+                node.nestingLevel += levelDiff;
+                node.children.forEach(child => updateRecursive(child));
+            }
+            
+            updateRecursive(item);
+        }
+        
+        function deleteItem() {
+            saveUndoState();
+            
+            if (!window.selectedItem || !window.registry[window.selectedItem]) return;
+            deleteItemById(window.selectedItem);
+        }
+        
+        function deleteItemById(itemId) {
+            if (!window.registry[itemId]) return;
+            
+            const itemToDelete = window.registry[itemId];
+            const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+            
+            // Find all instances of this item (if it's an ObjectMap NL1I)
+            const instancesToDelete = [];
+            if (window.activeTab === 'ObjectMap' && itemToDelete.nestingLevel > 0) {
+                // Find all instances in SiteMap
+                const findInstances = (items) => {
+                    items.forEach(item => {
+                        if (item.instanceOf === itemToDelete.id) {
+                            instancesToDelete.push(item.id);
+                        }
+                        if (item.children) {
+                            findInstances(item.children);
+                        }
+                    });
+                };
+                window.parsedData.siteMap.forEach(column => {
+                    findInstances(column);
+                });
+            }
+            
+            // Delete the item from its location
+            if (itemToDelete.nestingLevel === 0) {
+                // L1I - find and remove from column
+                for (let column of columns) {
+                    const index = column.findIndex(item => item.id === itemToDelete.id);
+                    if (index !== -1) {
+                        column.splice(index, 1);
+                        break;
+                    }
+                }
+            } else {
+                // NL1I - find parent and remove from children
+                const parent = findParent(itemToDelete);
+                if (parent) {
+                    const index = parent.children.findIndex(c => c.id === itemToDelete.id);
+                    if (index !== -1) {
+                        parent.children.splice(index, 1);
+                    }
+                }
+            }
+            
+            // Delete all instances if this was an ObjectMap NL1I
+            if (instancesToDelete.length > 0) {
+                const deleteInstance = (items, idToDelete) => {
+                    for (let i = items.length - 1; i >= 0; i--) {
+                        if (items[i].id === idToDelete) {
+                            items.splice(i, 1);
+                        } else if (items[i].children) {
+                            deleteInstance(items[i].children, idToDelete);
+                        }
+                    }
+                };
+                
+                instancesToDelete.forEach(instanceId => {
+                    window.parsedData.siteMap.forEach(column => {
+                        deleteInstance(column, instanceId);
+                    });
+                });
+            }
+            
+            // Clean up empty columns
+            cleanupEmptyColumns();
+            
+            // Clear selection
+            window.selectedItem = null;
+            
+            // Update everything
+            updateXMLFromData(true);
+            parseXML();
+            renderActionButtons();
+            updateObjectTree();
+            updateThreadTabState();
+            document.getElementById('titleEditor').style.display = 'none';
+        }
+        
+        function cleanupEmptyColumns() {
+            window.parsedData.objectMap = window.parsedData.objectMap.filter(col => col.length > 0);
+            window.parsedData.siteMap = window.parsedData.siteMap.filter(col => col.length > 0);
+        }
+        
+        function handleTypeChange(e) {
+            const newType = e.target.value;
+            
+            if (window.multiSelectedItems.size > 1) {
+                // Change type for all selected items
+                const selectedItems = Array.from(window.multiSelectedItems).map(id => window.registry[id]);
+                const allNL1I = selectedItems.every(item => item && item.nestingLevel > 0 && !item.instanceOf);
+                
+                if (!allNL1I) return;
+                
+                selectedItems.forEach(item => {
+                    if (item && item.nestingLevel > 0 && !item.instanceOf) {
+                        item.type = newType;
+                    }
+                });
+                
+                updateXMLFromData(true);
+                renderDiagram();
+                updateObjectTree();
+                updateTitleEditor();
+                
+            } else if (window.selectedItem && window.registry[window.selectedItem]) {
+                // Change type for single item
+                const item = window.registry[window.selectedItem];
+                
+                // Don't change type for instances or L1I items
+                if (item.instanceOf || item.nestingLevel === 0) return;
+                
+                item.type = newType;
+                updateXMLFromData(true);
+                renderDiagram();
+                updateObjectTree();
+            }
+        }
+        
+        // ===== NEW CONTROL FUNCTIONS =====
+        
+        function unnestItem() {
+            if (!window.selectedItem || !window.registry[window.selectedItem]) return;
+            
+            const item = window.registry[window.selectedItem];
+            if (item.nestingLevel === 0) return; // Already at top level
+            
+            const parent = findParent(item);
+            if (!parent) return;
+            
+            // Remove from parent's children
+            const itemIndex = parent.children.findIndex(c => c.id === item.id);
+            if (itemIndex === -1) return;
+            parent.children.splice(itemIndex, 1);
+            
+            // Convert to INFO if it was something else
+            item.type = 'info';
+            
+            // Add to same column as parent if parent is L1I, or parent's parent column
+            const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+            
+            if (parent.nestingLevel === 0) {
+                // Parent is L1I, add to same column
+                const colIndex = findItemColumn(parent.id);
+                const parentIndex = columns[colIndex].findIndex(i => i.id === parent.id);
+                
+                item.nestingLevel = 0;
+                updateNestingLevels(item, 0);
+                
+                columns[colIndex].splice(parentIndex + 1, 0, item);
+            } else {
+                // Parent is NL1I, add as sibling
+                const grandparent = findParent(parent);
+                if (grandparent) {
+                    const parentIndex = grandparent.children.findIndex(c => c.id === parent.id);
+                    
+                    item.nestingLevel = parent.nestingLevel;
+                    updateNestingLevels(item, parent.nestingLevel);
+                    
+                    grandparent.children.splice(parentIndex + 1, 0, item);
+                }
+            }
+            
+            updateXMLFromData(true);
+            parseXML();
+            selectItem(item.id);
+        }
+        
+        function unnestMultipleItems() {
+            const selectedItems = Array.from(window.multiSelectedItems).map(id => window.registry[id]);
+            const canUnnest = selectedItems.every(item => item && item.nestingLevel > 0);
+            
+            if (!canUnnest) return;
+            
+            selectedItems.forEach(item => {
+                if (!item || item.nestingLevel === 0) return;
+                
+                const parent = findParent(item);
+                if (!parent) return;
+                
+                // Remove from parent's children
+                const itemIndex = parent.children.findIndex(c => c.id === item.id);
+                if (itemIndex === -1) return;
+                parent.children.splice(itemIndex, 1);
+                
+                // Convert to INFO
+                item.type = 'info';
+                
+                // Add to same level as parent
+                const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+                
+                if (parent.nestingLevel === 0) {
+                    const colIndex = findItemColumn(parent.id);
+                    const parentIndex = columns[colIndex].findIndex(i => i.id === parent.id);
+                    
+                    item.nestingLevel = 0;
+                    updateNestingLevels(item, 0);
+                    
+                    columns[colIndex].splice(parentIndex + 1, 0, item);
+                } else {
+                    const grandparent = findParent(parent);
+                    if (grandparent) {
+                        const parentIndex = grandparent.children.findIndex(c => c.id === parent.id);
+                        
+                        item.nestingLevel = parent.nestingLevel;
+                        updateNestingLevels(item, parent.nestingLevel);
+                        
+                        grandparent.children.splice(parentIndex + 1, 0, item);
+                    }
+                }
+            });
+            
+            window.multiSelectedItems.clear();
+            updateXMLFromData(true);
+            parseXML();
+        }
+        
+        function duplicateItem() {
+            if (!window.selectedItem || !window.registry[window.selectedItem]) return;
+            
+            const original = window.registry[window.selectedItem];
+            const duplicate = duplicateSingleItem(original);
+            
+            updateXMLFromData(true);
+            parseXML();
+            selectItem(duplicate.id);
+        }
+        
+        function duplicateMultipleItems() {
+            const selectedItems = Array.from(window.multiSelectedItems).map(id => window.registry[id]);
+            
+            selectedItems.forEach(item => {
+                if (item) duplicateSingleItem(item);
+            });
+            
+            window.multiSelectedItems.clear();
+            updateXMLFromData(true);
+            parseXML();
+        }
+        
+        function duplicateSingleItem(item) {
+            const duplicate = JSON.parse(JSON.stringify(item)); // Deep clone
+            
+            // Generate new IDs for duplicate and all children
+            function regenerateIds(node) {
+                node.id = generateUniqueId(node.type);
+                node.children.forEach(child => regenerateIds(child));
+            }
+            regenerateIds(duplicate);
+            
+            // Insert duplicate next to original
+            const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+            
+            if (item.nestingLevel === 0) {
+                // L1I - add to same column
+                const colIndex = findItemColumn(item.id);
+                const itemIndex = columns[colIndex].findIndex(i => i.id === item.id);
+                columns[colIndex].splice(itemIndex + 1, 0, duplicate);
+            } else {
+                // NL1I - add as sibling
+                const parent = findParent(item);
+                if (parent) {
+                    const itemIndex = parent.children.findIndex(c => c.id === item.id);
+                    parent.children.splice(itemIndex + 1, 0, duplicate);
+                }
+            }
+            
+            return duplicate;
+        }
+        
+        function deleteMultipleItems() {
+            const itemsToDelete = Array.from(window.multiSelectedItems);
+            itemsToDelete.forEach(itemId => {
+                deleteItemById(itemId);
+            });
+            
+            window.multiSelectedItems.clear();
+            window.selectedItem = null;
+            
+            cleanupEmptyColumns();
+            updateXMLFromData(true);
+            parseXML();
+            renderActionButtons();
+            updateObjectTree();
+            updateThreadTabState();
+            document.getElementById('titleEditor').style.display = 'none';
+        }
+        
+        // Initial setup
+        console.log('XML Diagram Editor - Final Version + Thread View');
+        renderActionButtons();
+        parseXML();
+        updateThreadTabState();  // Initialize Thread tab state
+        updateTitleEditor(); // Initialize title editor
+        
+        // Keyboard handlers
+        document.addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                // Special handling for Enter key in title input
+                if (e.key === 'Enter' && e.target.id === 'titleInput') {
+                    handleTitleKeyDown(e);
+                }
+                return;
+            }
+            
+            // Undo with Ctrl+Z or Cmd+Z
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                undo();
+                return;
+            }
+            
+            if (e.key === 'Escape') {
+                if (window.linkingMode) {
+                    exitLinkingMode();
+                    window.selectedItem = null;
+                    window.multiSelectedItems.clear();
+                    renderDiagram();
+                    renderActionButtons();
+                    updateObjectTree();
+                    updateThreadTabState();  // Update Thread tab state
+                    document.getElementById('titleEditor').style.display = 'none';
+                } else if (window.selectedItem || window.multiSelectedItems.size > 0) {
+                    window.selectedItem = null;
+                    window.multiSelectedItems.clear();
+                    renderDiagram();
+                    renderActionButtons();
+                    updateObjectTree();
+                    updateThreadTabState();  // Update Thread tab state
+                    document.getElementById('titleEditor').style.display = 'none';
+                }
+                return;
+            }
+            
+            // Delete key handler - handle both Delete and Backspace
+            if ((e.key === 'Delete' || e.key === 'Backspace') && (window.selectedItem || window.multiSelectedItems.size > 0) && !window.linkingMode) {
+                e.preventDefault();
+                
+                // Delete all selected items
+                if (window.multiSelectedItems.size > 0) {
+                    const itemsToDelete = Array.from(window.multiSelectedItems);
+                    itemsToDelete.forEach(itemId => {
+                        const item = window.registry[itemId];
+                        if (item) {
+                            deleteItemById(itemId);
+                        }
+                    });
+                    window.multiSelectedItems.clear();
+                } else if (window.selectedItem) {
+                    deleteItem();
+                }
+                return;
+            }
+            
+            if (window.linkingMode) return;
+            
+            if (window.selectedItem && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                let changed = false;
+                switch(e.key) {
+                    case 'ArrowUp':
+                        changed = moveItemUp();
+                        break;
+                    case 'ArrowDown':
+                        changed = moveItemDown();
+                        break;
+                    case 'ArrowLeft':
+                        changed = moveItemLeft();
+                        break;
+                    case 'ArrowRight':
+                        changed = moveItemRight();
+                        break;
+                }
+                
+                if (changed) {
+                    updateXMLFromData(true);
+                    parseXML();
+                    selectItem(window.selectedItem);
+                }
+            }
+        }, { capture: true, passive: false });
+        
+        // Title input handler
+        document.getElementById('titleInput').addEventListener('input', handleTitleChange);
+        
+        // Click on empty space to deselect
+        document.getElementById('diagramCanvas').addEventListener('click', function(e) {
+            if (e.target === this) {
+                clearMultiSelection();
+            }
+        });
+        
+        document.querySelector('.diagram-builder').addEventListener('click', function(e) {
+            if (e.target === this) {
+                clearMultiSelection();
+            }
+        });
+        
+        // Type selector handler
+        document.getElementById('typeSelect').addEventListener('change', handleTypeChange);
+        
+        // ===== PASTE MODAL HANDLERS =====
+        
+        function openPasteModal() {
+            const modal = document.getElementById('pasteModal');
+            const textarea = document.getElementById('pasteTextarea');
+            const typeLabel = document.getElementById('pasteTypeLabel');
+            
+            // Set the type label based on current tab
+            typeLabel.textContent = window.activeTab === 'ObjectMap' ? 'OBJECT' : 'PAGE';
+            
+            modal.classList.add('active');
+            textarea.value = '';
+            textarea.focus();
+            
+            updatePastePreview();
+        }
+        
+        function closePasteModal() {
+            const modal = document.getElementById('pasteModal');
+            modal.classList.remove('active');
+        }
+        
+        function updatePastePreview() {
+            const textarea = document.getElementById('pasteTextarea');
+            const preview = document.getElementById('pastePreview');
+            const previewList = document.getElementById('pastePreviewList');
+            const previewCount = document.getElementById('previewCount');
+            const createBtn = document.getElementById('pasteCreateBtn');
+            
+            const text = textarea.value.trim();
+            
+            if (!text) {
+                preview.style.display = 'none';
+                createBtn.disabled = true;
+                return;
+            }
+            
+            const lines = text.split('\n').filter(line => line.trim() !== '');
+            
+            if (lines.length === 0) {
+                preview.style.display = 'none';
+                createBtn.disabled = true;
+                return;
+            }
+            
+            preview.style.display = 'block';
+            previewCount.textContent = lines.length;
+            createBtn.disabled = false;
+            
+            const itemType = window.activeTab === 'ObjectMap' ? 'object' : 'page';
+            const typeBadgeClass = window.activeTab === 'ObjectMap' ? 'object' : 'page';
+            const typeText = window.activeTab === 'ObjectMap' ? 'OBJECT' : 'PAGE';
+            
+            previewList.innerHTML = lines.map(line => {
+                const trimmed = line.trim();
+                return `<div class="paste-preview-item">
+                    <span class="type-badge ${typeBadgeClass}">${typeText}</span>
+                    ${trimmed}
+                </div>`;
+            }).join('');
+        }
+        
+        function createItemsFromPaste() {
+            const textarea = document.getElementById('pasteTextarea');
+            const text = textarea.value.trim();
+            
+            if (!text) return;
+            
+            const lines = text.split('\n').filter(line => line.trim() !== '');
+            
+            if (lines.length === 0) return;
+            
+            const itemType = window.activeTab === 'ObjectMap' ? 'object' : 'page';
+            const columns = window.activeTab === 'ObjectMap' ? window.parsedData.objectMap : window.parsedData.siteMap;
+            
+            // Determine target column
+            let targetColumnIndex = 0;
+            if (window.selectedItem && window.registry[window.selectedItem]) {
+                targetColumnIndex = findItemColumn(window.selectedItem);
+            }
+            
+            // Ensure the column exists
+            while (columns.length <= targetColumnIndex) {
+                columns.push([]);
+            }
+            
+            // Create all items
+            const createdItems = [];
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                
+                const newItem = {
+                    id: generateUniqueId(itemType),
+                    type: itemType,
+                    title: trimmed,
+                    nestingLevel: 0,
+                    children: []
+                };
+                
+                columns[targetColumnIndex].push(newItem);
+                createdItems.push(newItem);
+            });
+            
+            // Update XML and UI
+            updateXMLFromData(true);
+            parseXML();
+            
+            // Select the first created item
+            if (createdItems.length > 0) {
+                selectItem(createdItems[0].id);
+            }
+            
+            // Close modal
+            closePasteModal();
+            
+            console.log(`Created ${createdItems.length} items from clipboard`);
+        }
+        
+        // Paste modal event listeners
+        document.getElementById('pasteCloseBtn').addEventListener('click', closePasteModal);
+        document.getElementById('pasteCancelBtn').addEventListener('click', closePasteModal);
+        document.getElementById('pasteCreateBtn').addEventListener('click', createItemsFromPaste);
+        
+        document.getElementById('pasteTextarea').addEventListener('input', updatePastePreview);
+        
+        // Close modal when clicking outside
+        document.getElementById('pasteModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePasteModal();
+            }
+        });
+        
+        // Keyboard shortcut: Ctrl/Cmd + Shift + V to open paste modal
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'V') {
+                e.preventDefault();
+                openPasteModal();
+            }
+        });
+    </script>
+</body>
+</html>
+                
